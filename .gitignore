@@ -1,0 +1,22 @@
+# Entorno virtual
+venv/
+env/
+
+# Bases de datos (datos sensibles de estudiantes)
+data/*.db
+data/*.db-journal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Configuración local
+.vscode/
+.idea/
+*.log
