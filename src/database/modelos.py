@@ -1,11 +1,11 @@
 """
 Módulo encargado de crear la estructura de la base de datos SQLite
+para el Sistema de Enfermería.
 """
 
 import sqlite3
 import os
 
-# Ruta donde se guardará la base de datos
 RUTA_BD = os.path.join(os.path.dirname(__file__), "..", "..", "data", "enfermeria.db")
 
 
@@ -13,7 +13,7 @@ def conectar():
     """Crea y devuelve una conexión a la base de datos SQLite."""
     os.makedirs(os.path.dirname(RUTA_BD), exist_ok=True)
     conexion = sqlite3.connect(RUTA_BD)
-    conexion.execute("PRAGMA foreign_keys = ON")  # habilita llaves foráneas
+    conexion.execute("PRAGMA foreign_keys = ON")
     return conexion
 
 
@@ -22,23 +22,18 @@ def crear_tablas():
     conexion = conectar()
     cursor = conexion.cursor()
 
+    # Tabla: estudiantes
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS estudiantes (
             id TEXT PRIMARY KEY,
-            codigo_estudiante TEXT UNIQUE NOT NULL,
-            nombres TEXT NOT NULL,
-            apellidos TEXT NOT NULL,
-            curso_grado TEXT,
-            fecha_nacimiento DATE,
-            contacto_emergencia TEXT,
-            telefono_emergencia TEXT,
-            alergias TEXT,
-            condiciones_medicas TEXT,
+            nombre TEXT NOT NULL,
+            paralelo TEXT NOT NULL,
             origen_pc TEXT NOT NULL,
             fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
+    # Tabla: usuarios
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id TEXT PRIMARY KEY,
@@ -50,6 +45,7 @@ def crear_tablas():
         )
     """)
 
+    # Tabla: atenciones
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS atenciones (
             id TEXT PRIMARY KEY,
@@ -57,15 +53,11 @@ def crear_tablas():
             fecha DATE NOT NULL,
             hora_llegada TIME NOT NULL,
             hora_salida TIME,
-            motivo_consulta TEXT NOT NULL,
-            sintomas TEXT,
-            signos_vitales_temp REAL,
-            signos_vitales_presion TEXT,
-            procedimiento_realizado TEXT,
-            medicamento_administrado TEXT,
-            observaciones TEXT,
-            requiere_seguimiento BOOLEAN DEFAULT 0,
-            se_notifico_representante BOOLEAN DEFAULT 0,
+            saturacion INTEGER,
+            temperatura REAL,
+            frecuencia_cardiaca INTEGER,
+            diagnostico TEXT,
+            recomendacion TEXT,
             enfermera_responsable TEXT,
             origen_pc TEXT NOT NULL,
             fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -74,6 +66,7 @@ def crear_tablas():
         )
     """)
 
+    # Tabla: log_sincronizacion
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS log_sincronizacion (
             id TEXT PRIMARY KEY,
