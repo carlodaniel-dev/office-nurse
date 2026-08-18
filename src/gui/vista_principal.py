@@ -1,7 +1,12 @@
+"""
+Ventana principal del Sistema de Enfermería Escolar.
+Contiene el menú de navegación y el contenedor donde se muestran las vistas.
+"""
+
 import customtkinter as ctk
 
-ctk.set_appearance_mode("light")       # "light", "dark" o "system"
-ctk.set_default_color_theme("blue")    # tema de color base
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
 
 class VentanaPrincipal(ctk.CTk):
@@ -12,22 +17,20 @@ class VentanaPrincipal(ctk.CTk):
         self.geometry("1100x650")
         self.minsize(900, 550)
 
-        # Configurar grid principal: columna 0 = menú, columna 1 = contenido
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
         self._crear_menu_lateral()
         self._crear_contenedor_principal()
+        self._crear_vistas()
 
-        # Vista inicial al abrir la app
         self.mostrar_vista_atenciones()
 
     def _crear_menu_lateral(self):
-        """Crea el panel lateral con los botones de navegación."""
         self.menu_lateral = ctk.CTkFrame(self, width=220, corner_radius=0)
         self.menu_lateral.grid(row=0, column=0, sticky="nsew")
-        self.menu_lateral.grid_rowconfigure(6, weight=1)  # empuja el resto hacia abajo
+        self.menu_lateral.grid_rowconfigure(6, weight=1)
 
         titulo = ctk.CTkLabel(
             self.menu_lateral,
@@ -56,34 +59,44 @@ class VentanaPrincipal(ctk.CTk):
             boton.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
 
     def _crear_contenedor_principal(self):
-        """Frame donde se van a 'inyectar' las distintas vistas."""
         self.contenedor = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.contenedor.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
         self.contenedor.grid_columnconfigure(0, weight=1)
         self.contenedor.grid_rowconfigure(0, weight=1)
 
-    def _limpiar_contenedor(self):
-        """Elimina la vista actual antes de mostrar una nueva."""
-        for widget in self.contenedor.winfo_children():
-            widget.destroy()
+    def _crear_vistas(self):
+        """
+        Crea las 3 vistas UNA SOLA VEZ y las apila en la misma celda del grid.
+        Nunca se destruyen mientras la app está abierta (evita el bug de
+        CustomTkinter con el ScalingTracker de los CTkComboBox al cambiar
+        de pantalla/DPI).
+        """
+        from gui.vista_atenciones import VistaAtenciones
+        from gui.vista_estudiantes import VistaEstudiantes
+        from gui.vista_sincronizacion import VistaSincronizacion
+
+        self.vista_atenciones = VistaAtenciones(self.contenedor)
+        self.vista_estudiantes = VistaEstudiantes(self.contenedor)
+        self.vista_sincronizacion = VistaSincronizacion(self.contenedor)
+
+        for vista in (self.vista_atenciones, self.vista_estudiantes, self.vista_sincronizacion):
+            vista.grid(row=0, column=0, sticky="nsew")
 
     # ------------------------------------------------------------
-    # Navegación entre vistas
+    # Navegación entre vistas (solo trae al frente la que corresponde)
     # ------------------------------------------------------------
     def mostrar_vista_atenciones(self):
-        from gui.vista_atenciones import VistaAtenciones
-        self._limpiar_contenedor()
-        VistaAtenciones(self.contenedor).grid(row=0, column=0, sticky="nsew")
+        self.vista_atenciones.tkraise()
+        if hasattr(self.vista_atenciones, "_cargar_atenciones_del_dia"):
+            self.vista_atenciones._cargar_atenciones_del_dia()
 
     def mostrar_vista_estudiantes(self):
-        from gui.vista_estudiantes import VistaEstudiantes
-        self._limpiar_contenedor()
-        VistaEstudiantes(self.contenedor).grid(row=0, column=0, sticky="nsew")
+        self.vista_estudiantes.tkraise()
+        if hasattr(self.vista_estudiantes, "_cargar_estudiantes"):
+            self.vista_estudiantes._cargar_estudiantes()
 
     def mostrar_vista_sincronizacion(self):
-        from gui.vista_sincronizacion import VistaSincronizacion
-        self._limpiar_contenedor()
-        VistaSincronizacion(self.contenedor).grid(row=0, column=0, sticky="nsew")
+        self.vista_sincronizacion.tkraise()
 
 
 if __name__ == "__main__":

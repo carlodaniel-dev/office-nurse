@@ -51,7 +51,7 @@ class VistaAtenciones(ctk.CTkFrame):
         self.combo_curso.set("")
         self.combo_curso.grid(row=1, column=1, padx=10, pady=(0, 0), sticky="ew")
 
-        ctk.CTkLabel(frame_formulario, text="Paralelo", anchor="w").grid(
+        ctk.CTkLabel(frame_formulario, text="Paralelo *", anchor="w").grid(
             row=0, column=2, padx=10, pady=(10, 0), sticky="w"
         )
         self.combo_paralelo = ctk.CTkComboBox(frame_formulario, values=PARALELOS, state="readonly")
@@ -104,8 +104,6 @@ class VistaAtenciones(ctk.CTkFrame):
 
         # Campo "Otros" para diagnóstico (ancho completo, su propia fila)
         self.entry_diagnostico_otro = ctk.CTkEntry(frame_formulario, placeholder_text="Especifique el diagnóstico")
-        self.entry_diagnostico_otro.grid(row=9, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="ew")
-        self.entry_diagnostico_otro.grid_remove()
 
         # --- Fila 5: Recomendación (ancho completo) ---
         ctk.CTkLabel(frame_formulario, text="Recomendación", anchor="w").grid(
@@ -172,10 +170,10 @@ class VistaAtenciones(ctk.CTkFrame):
     
     def _on_cambiar_diagnostico(self, valor_seleccionado):
         if valor_seleccionado == "Otros":
-            self.entry_diagnostico_otro.grid()
+            self.entry_diagnostico_otro.grid(row=9, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="ew")
             self.entry_diagnostico_otro.focus()
         else:
-            self.entry_diagnostico_otro.grid_remove()
+            self.entry_diagnostico_otro.grid_forget()
             self.entry_diagnostico_otro.delete(0, "end")
 
     # ------------------------------------------------------------
@@ -184,7 +182,7 @@ class VistaAtenciones(ctk.CTkFrame):
     def _guardar_atencion(self):
         nombre = self.entry_nombre.get().strip()
         curso = self.combo_curso.get().strip()
-        paralelo = self.combo_paralelo.get().strip()
+        paralelo = self.combo_paralelo.get().strip() or None
         sexo = self.var_sexo.get().strip()
 
         if not nombre:
@@ -330,41 +328,96 @@ class VistaAtenciones(ctk.CTkFrame):
             btn_detalle.grid(row=fila_idx, column=4, padx=5, pady=3, sticky="w")
 
     def _mostrar_detalle_atencion(self, atencion):
-            """Abre una ventana emergente con todos los datos de la atención."""
-            saturacion = atencion[5]
-            temperatura = atencion[6]
-            frecuencia = atencion[7]
-            diagnostico = atencion[8]
-            recomendacion = atencion[9]
-            nombre = atencion[-3]
-            curso = atencion[-2]
-            paralelo = atencion[-1]
+        """Abre una ventana emergente con todos los datos de la atención, organizados por sección."""
+        hora_llegada = atencion[3]
+        hora_salida = atencion[4]
+        saturacion = atencion[5]
+        temperatura = atencion[6]
+        frecuencia = atencion[7]
+        diagnostico = atencion[8]
+        recomendacion = atencion[9]
+        nombre = atencion[-4]
+        curso = atencion[-3]
+        paralelo = atencion[-2]
+        sexo = atencion[-1]
 
-            ventana = ctk.CTkToplevel(self)
-            ventana.title(f"Detalle - {nombre}")
-            ventana.geometry("420x420")
-            ventana.grab_set()  # bloquea la ventana principal hasta que se cierre esta
+        ventana = ctk.CTkToplevel(self)
+        ventana.title(f"Detalle - {nombre}")
+        ventana.geometry("460x600")
+        ventana.grab_set()
 
-            contenedor = ctk.CTkFrame(ventana, fg_color="transparent")
-            contenedor.pack(fill="both", expand=True, padx=20, pady=20)
+        contenedor = ctk.CTkScrollableFrame(ventana, fg_color="transparent")
+        contenedor.pack(fill="both", expand=True, padx=15, pady=15)
+        contenedor.grid_columnconfigure((0, 1, 2), weight=1)
 
-            def agregar_campo(etiqueta, valor):
-                ctk.CTkLabel(contenedor, text=etiqueta, font=ctk.CTkFont(weight="bold"), anchor="w").pack(
-                    fill="x", pady=(8, 0)
-                )
-                ctk.CTkLabel(contenedor, text=valor or "—", anchor="w", justify="left", wraplength=370).pack(
-                    fill="x", pady=(0, 0)
-                )
+        # ---------- Encabezado: datos del estudiante ----------
+        frame_header = ctk.CTkFrame(contenedor)
+        frame_header.grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 15))
+        frame_header.grid_columnconfigure(0, weight=1)
 
-            agregar_campo("Estudiante", f"{nombre} — {curso} {paralelo or ''}".strip())
-            agregar_campo("Saturación", f"{saturacion}%" if saturacion is not None else "—")
-            agregar_campo("Frecuencia cardíaca", f"{frecuencia} lpm" if frecuencia is not None else "—")
-            agregar_campo("Temperatura", f"{temperatura} °C" if temperatura is not None else "—")
-            agregar_campo("Diagnóstico", diagnostico)
-            agregar_campo("Recomendación", recomendacion)
+        ctk.CTkLabel(
+            frame_header, text=nombre, font=ctk.CTkFont(size=18, weight="bold"), anchor="w"
+        ).grid(row=0, column=0, padx=15, pady=(15, 0), sticky="w")
 
-            btn_cerrar = ctk.CTkButton(contenedor, text="Cerrar", command=ventana.destroy)
-            btn_cerrar.pack(pady=(20, 0))
+        paralelo_texto = f" \"{paralelo}\"" if paralelo and paralelo != "N/A" else ""
+        ctk.CTkLabel(
+            frame_header, text=f"{curso}{paralelo_texto}  ·  {sexo}",
+            text_color="gray", anchor="w"
+        ).grid(row=1, column=0, padx=15, pady=(0, 15), sticky="w")
+
+        # ---------- Sección: Signos vitales ----------
+        ctk.CTkLabel(
+            contenedor, text="Signos vitales", font=ctk.CTkFont(size=14, weight="bold"), anchor="w"
+        ).grid(row=1, column=0, columnspan=3, padx=5, pady=(0, 8), sticky="w")
+
+        self._crear_tarjeta_signo(contenedor, "🫁 Saturación", f"{saturacion}%" if saturacion is not None else "—", 2, 0)
+        self._crear_tarjeta_signo(contenedor, "❤️ Frec. cardíaca", f"{frecuencia} lpm" if frecuencia is not None else "—", 2, 1)
+        self._crear_tarjeta_signo(contenedor, "🌡️ Temperatura", f"{temperatura} °C" if temperatura is not None else "—", 2, 2)
+
+        # ---------- Sección: Evaluación clínica ----------
+        ctk.CTkLabel(
+            contenedor, text="Evaluación clínica", font=ctk.CTkFont(size=14, weight="bold"), anchor="w"
+        ).grid(row=3, column=0, columnspan=3, padx=5, pady=(15, 8), sticky="w")
+
+        frame_diagnostico = ctk.CTkFrame(contenedor)
+        frame_diagnostico.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(0, 10))
+        ctk.CTkLabel(
+            frame_diagnostico, text="Diagnóstico", font=ctk.CTkFont(weight="bold"), anchor="w"
+        ).pack(fill="x", padx=15, pady=(12, 0))
+        ctk.CTkLabel(
+            frame_diagnostico, text=diagnostico or "—", anchor="w", justify="left", wraplength=390
+        ).pack(fill="x", padx=15, pady=(2, 12))
+
+        frame_recomendacion = ctk.CTkFrame(contenedor)
+        frame_recomendacion.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(0, 15))
+        ctk.CTkLabel(
+            frame_recomendacion, text="Recomendación", font=ctk.CTkFont(weight="bold"), anchor="w"
+        ).pack(fill="x", padx=15, pady=(12, 0))
+        ctk.CTkLabel(
+            frame_recomendacion, text=recomendacion or "—", anchor="w", justify="left", wraplength=390
+        ).pack(fill="x", padx=15, pady=(2, 12))
+
+        # ---------- Pie: horas ----------
+        frame_horas = ctk.CTkFrame(contenedor, fg_color="transparent")
+        frame_horas.grid(row=6, column=0, columnspan=3, sticky="ew")
+        frame_horas.grid_columnconfigure((0, 1), weight=1)
+
+        ctk.CTkLabel(
+            frame_horas, text=f"🕐 Llegada: {hora_llegada}", text_color="gray", anchor="w"
+        ).grid(row=0, column=0, sticky="w")
+        ctk.CTkLabel(
+            frame_horas, text=f"🕐 Salida: {hora_salida or 'Pendiente'}", text_color="gray", anchor="e"
+        ).grid(row=0, column=1, sticky="e")
+
+        btn_cerrar = ctk.CTkButton(contenedor, text="Cerrar", command=ventana.destroy)
+        btn_cerrar.grid(row=7, column=0, columnspan=3, pady=(20, 5))
+
+    def _crear_tarjeta_signo(self, master, etiqueta, valor, row, col):
+        """Crea una pequeña tarjeta para mostrar un signo vital dentro de la ventana de detalle."""
+        tarjeta = ctk.CTkFrame(master)
+        tarjeta.grid(row=row, column=col, padx=5, pady=(0, 10), sticky="ew")
+        ctk.CTkLabel(tarjeta, text=etiqueta, font=ctk.CTkFont(size=11), text_color="gray").pack(pady=(10, 0))
+        ctk.CTkLabel(tarjeta, text=valor, font=ctk.CTkFont(size=16, weight="bold")).pack(pady=(0, 10))
 
     def _marcar_salida(self, id_atencion):
         cerrar_atencion(id_atencion)

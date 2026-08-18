@@ -76,6 +76,64 @@ def listar_estudiantes():
     conexion.close()
     return resultados
 
+def filtrar_estudiantes(texto_busqueda):
+    """Filtra estudiantes por nombre, curso o paralelo (para el buscador de la vista)."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    if not texto_busqueda:
+        cursor.execute("SELECT * FROM estudiantes ORDER BY nombre")
+    else:
+        patron = f"%{texto_busqueda}%"
+        cursor.execute("""
+            SELECT * FROM estudiantes
+            WHERE nombre LIKE ? OR curso LIKE ? OR paralelo LIKE ?
+            ORDER BY nombre
+        """, (patron, patron, patron))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+
+def actualizar_estudiante(id_estudiante, nombre, curso, paralelo, sexo):
+    """Actualiza los datos de un estudiante existente."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        UPDATE estudiantes
+        SET nombre = ?, curso = ?, paralelo = ?, sexo = ?
+        WHERE id = ?
+    """, (nombre, curso, paralelo, sexo, id_estudiante))
+    conexion.commit()
+    filas_afectadas = cursor.rowcount
+    conexion.close()
+    return filas_afectadas > 0
+
+
+def contar_atenciones_por_estudiante(id_estudiante):
+    """Cuenta cuántas atenciones tiene registradas un estudiante (para validar antes de eliminar)."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT COUNT(*) FROM atenciones WHERE estudiante_id = ?", (id_estudiante,))
+    total = cursor.fetchone()[0]
+    conexion.close()
+    return total
+
+
+def eliminar_estudiante(id_estudiante):
+    """
+    Elimina un estudiante SOLO si no tiene atenciones registradas.
+    Devuelve (True, None) si se eliminó, o (False, motivo) si no se pudo.
+    """
+    total_atenciones = contar_atenciones_por_estudiante(id_estudiante)
+    if total_atenciones > 0:
+        return False, f"No se puede eliminar: tiene {total_atenciones} atención(es) registrada(s)."
+
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("DELETE FROM estudiantes WHERE id = ?", (id_estudiante,))
+    conexion.commit()
+    conexion.close()
+    return True, None
 
 # ==========================================================
 # ATENCIONES
@@ -124,7 +182,7 @@ def listar_atenciones_por_fecha(fecha):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
-        SELECT a.*, e.nombre, e.curso, e.paralelo
+        SELECT a.*, e.nombre, e.curso, e.paralelo, e.sexo
         FROM atenciones a
         JOIN estudiantes e ON a.estudiante_id = e.id
         WHERE a.fecha = ?
