@@ -27,7 +27,9 @@ def crear_tablas():
         CREATE TABLE IF NOT EXISTS estudiantes (
             id TEXT PRIMARY KEY,
             nombre TEXT NOT NULL,
-            paralelo TEXT NOT NULL,
+            curso TEXT NOT NULL,
+            paralelo TEXT,
+            sexo TEXT,
             origen_pc TEXT NOT NULL,
             fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP
         )

@@ -13,16 +13,16 @@ ORIGEN_PC = "PC1"  # <-- cambiar a "PC2" en la otra computadora
 # ESTUDIANTES
 # ==========================================================
 
-def crear_estudiante(nombre, paralelo):
+def crear_estudiante(nombre, curso, paralelo=None, sexo=None):
     """Inserta un nuevo estudiante. Devuelve el id (UUID) generado."""
     id_estudiante = str(uuid.uuid4())
     conexion = conectar()
     cursor = conexion.cursor()
 
     cursor.execute("""
-        INSERT INTO estudiantes (id, nombre, paralelo, origen_pc)
-        VALUES (?, ?, ?, ?)
-    """, (id_estudiante, nombre, paralelo, ORIGEN_PC))
+        INSERT INTO estudiantes (id, nombre, curso, paralelo, sexo, origen_pc)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (id_estudiante, nombre, curso, paralelo, sexo, ORIGEN_PC))
 
     conexion.commit()
     conexion.close()
@@ -37,7 +37,7 @@ def buscar_estudiantes_por_nombre(texto_busqueda, limite=8):
     cursor = conexion.cursor()
     patron = f"%{texto_busqueda}%"
     cursor.execute("""
-        SELECT id, nombre, paralelo FROM estudiantes
+        SELECT id, nombre, curso, paralelo, sexo FROM estudiantes
         WHERE nombre LIKE ?
         ORDER BY nombre
         LIMIT ?
@@ -46,15 +46,14 @@ def buscar_estudiantes_por_nombre(texto_busqueda, limite=8):
     conexion.close()
     return resultados
 
-
-def buscar_estudiante_exacto(nombre, paralelo):
-    """Busca coincidencia exacta de nombre + paralelo (para evitar duplicados al crear)."""
+def buscar_estudiante_exacto(nombre, curso, paralelo):
+    """Busca coincidencia exacta de nombre + curso + paralelo (para evitar duplicados al crear)."""
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
         SELECT id FROM estudiantes
-        WHERE LOWER(nombre) = LOWER(?) AND paralelo = ?
-    """, (nombre.strip(), paralelo))
+        WHERE LOWER(nombre) = LOWER(?) AND curso = ? AND IFNULL(paralelo, '') = IFNULL(?, '')
+    """, (nombre.strip(), curso, paralelo))
     resultado = cursor.fetchone()
     conexion.close()
     return resultado[0] if resultado else None
@@ -125,7 +124,7 @@ def listar_atenciones_por_fecha(fecha):
     conexion = conectar()
     cursor = conexion.cursor()
     cursor.execute("""
-        SELECT a.*, e.nombre, e.paralelo
+        SELECT a.*, e.nombre, e.curso, e.paralelo
         FROM atenciones a
         JOIN estudiantes e ON a.estudiante_id = e.id
         WHERE a.fecha = ?

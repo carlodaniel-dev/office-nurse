@@ -2,29 +2,42 @@
 Constantes usadas en la interfaz gráfica.
 """
 
+# TODO: reemplazar con la lista real y completa que definas
+CURSOS = [
+    "Inicial 3 Años",
+    "Inicial 4 Años",
+    "1 BCG",
+    "2 BCG",
+    "3 BCG",
+    "4 BCG",
+    "5 BCG",
+    "6 BCG",
+    "7 BCG",
+    "8 BCG",
+    "9 BCG",
+    "10 BCG",
+    "1 Bachillerato",
+    "2 Bachillerato",
+    "3 Bachillerato",
+]
+
 PARALELOS = [
-    "Inicial 3A",
-    "Inicial 4A",
-    "Preparatoria A",
-    "Segundo Básica A",
-    "Tercero Básica A",
-    "Cuarto Básica A",
-    "Quinto Básica A",
-    "Sexto Básica A",
-    "Séptimo Básica A",
-    "Octavo A",
-    "Noveno A",
-    "Décimo A",
-    "1 BCG A",
-    "1 DG",
-    "1 INF",
-    "1 MEC",
-    "2 BCG A",
-    "2 DG",
-    "2 INF",
-    "2 MEC",
-    "3 BCG A",
-    "3 DG",
-    "3 INF",
-    "3 MEC",
+    "A", "B", "C", "D", 
+    "BCG", 
+    "Informatica", 
+    "Diseño Gráfico", 
+    "Mecanica Automotriz", 
+    "Servicios Hoteleros",]
+
+DIAGNOSTICOS = [
+    "Acompañamiento",
+    "Golpe",
+    "Herida",
+    "Vomito",
+    "Cefalea",
+    "Costura",
+    "Epistaxis",
+    "Cólico Mentrual",
+    "Dolor de Estomago",
+    "Otros"
 ]
