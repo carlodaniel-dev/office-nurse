@@ -36,46 +36,32 @@ class VistaAtenciones(ctk.CTkFrame):
         frame_formulario.grid_columnconfigure(1, weight=1)
         frame_formulario.grid_columnconfigure(2, weight=1)
 
-        # --- Fila 1: Nombre (ancho) + Sexo ---
+        # --- Fila 1: Nombre Curso Paralelo ---
         ctk.CTkLabel(frame_formulario, text="Nombre *", anchor="w").grid(
-            row=0, column=0, columnspan=2, padx=10, pady=(10, 0), sticky="w"
+            row=0, column=0, padx=10, pady=(10, 0), sticky="w"
         )
         self.entry_nombre = ctk.CTkEntry(frame_formulario)
-        self.entry_nombre.grid(row=1, column=0, columnspan=2, padx=10, pady=(0, 0), sticky="ew")
+        self.entry_nombre.grid(row=1, column=0, padx=10, pady=(0, 0), sticky="ew")
         self.entry_nombre.bind("<KeyRelease>", self._on_escribir_nombre)
 
-        ctk.CTkLabel(frame_formulario, text="Sexo *", anchor="w").grid(
-            row=0, column=2, padx=10, pady=(10, 0), sticky="w"
-        )
-        self.var_sexo = ctk.StringVar(value="")
-        frame_sexo = ctk.CTkFrame(frame_formulario, fg_color="transparent")
-        frame_sexo.grid(row=1, column=2, padx=10, pady=(0, 0), sticky="w")
-        ctk.CTkRadioButton(
-            frame_sexo, text="Masculino", variable=self.var_sexo, value="Masculino"
-        ).pack(anchor="w", pady=(2, 2))
-        ctk.CTkRadioButton(
-            frame_sexo, text="Femenino", variable=self.var_sexo, value="Femenino"
-        ).pack(anchor="w", pady=(2, 2))
-
-        # Frame de sugerencias del nombre (debajo del campo Nombre, columnas 0-1)
-        self.frame_sugerencias = ctk.CTkFrame(frame_formulario, fg_color=("gray90", "gray20"))
-
-        # --- Fila 2: Curso + Paralelo ---
         ctk.CTkLabel(frame_formulario, text="Curso *", anchor="w").grid(
-            row=3, column=0, padx=10, pady=(10, 0), sticky="w"
+            row=0, column=1, padx=10, pady=(10, 0), sticky="w"
         )
         self.combo_curso = ctk.CTkComboBox(frame_formulario, values=CURSOS, state="readonly")
         self.combo_curso.set("")
-        self.combo_curso.grid(row=4, column=0, padx=10, pady=(0, 10), sticky="ew")
+        self.combo_curso.grid(row=1, column=1, padx=10, pady=(0, 0), sticky="ew")
 
         ctk.CTkLabel(frame_formulario, text="Paralelo", anchor="w").grid(
-            row=3, column=1, padx=10, pady=(10, 0), sticky="w"
+            row=0, column=2, padx=10, pady=(10, 0), sticky="w"
         )
         self.combo_paralelo = ctk.CTkComboBox(frame_formulario, values=PARALELOS, state="readonly")
         self.combo_paralelo.set("")
-        self.combo_paralelo.grid(row=4, column=1, padx=10, pady=(0, 10), sticky="ew")
+        self.combo_paralelo.grid(row=1, column=2, padx=10, pady=(0, 0), sticky="ew")
 
-        # --- Fila 3: Saturación, Frecuencia, Temperatura ---
+        # Frame de sugerencias del nombre (debajo del campo Nombre)
+        self.frame_sugerencias = ctk.CTkFrame(frame_formulario, fg_color=("gray90", "gray20"))
+
+        # --- Fila 2: Saturación, Frecuencia, Temperatura ---
         ctk.CTkLabel(frame_formulario, text="Saturación (%)", anchor="w").grid(
             row=5, column=0, padx=10, pady=(0, 0), sticky="w"
         )
@@ -94,17 +80,29 @@ class VistaAtenciones(ctk.CTkFrame):
         self.entry_temperatura = ctk.CTkEntry(frame_formulario)
         self.entry_temperatura.grid(row=6, column=2, padx=10, pady=(0, 10), sticky="ew")
 
-        # --- Fila 4: Diagnóstico (ancho completo) ---
+                # --- Fila 4: Diagnóstico + Sexo ---
         ctk.CTkLabel(frame_formulario, text="Diagnóstico *", anchor="w").grid(
-            row=7, column=0, columnspan=3, padx=10, pady=(0, 0), sticky="w"
+            row=7, column=0, columnspan=2, padx=10, pady=(0, 0), sticky="w"
         )
         self.combo_diagnostico = ctk.CTkComboBox(
             frame_formulario, values=DIAGNOSTICOS, state="readonly",
             command=self._on_cambiar_diagnostico
         )
         self.combo_diagnostico.set("")
-        self.combo_diagnostico.grid(row=8, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="ew")
+        self.combo_diagnostico.grid(row=8, column=0, columnspan=2, padx=10, pady=(0, 10), sticky="ew")
 
+        ctk.CTkLabel(frame_formulario, text="Sexo *", anchor="w").grid(
+            row=7, column=2, padx=10, pady=(0, 0), sticky="w"
+        )
+        self.var_sexo = ctk.StringVar(value="")
+        self.segmented_sexo = ctk.CTkSegmentedButton(
+            frame_formulario,
+            values=["Masculino", "Femenino"],
+            variable=self.var_sexo
+        )
+        self.segmented_sexo.grid(row=8, column=2, padx=10, pady=(0, 10), sticky="ew")
+
+        # Campo "Otros" para diagnóstico (ancho completo, su propia fila)
         self.entry_diagnostico_otro = ctk.CTkEntry(frame_formulario, placeholder_text="Especifique el diagnóstico")
         self.entry_diagnostico_otro.grid(row=9, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="ew")
         self.entry_diagnostico_otro.grid_remove()
