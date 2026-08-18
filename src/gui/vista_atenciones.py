@@ -163,7 +163,7 @@ class VistaAtenciones(ctk.CTkFrame):
 
         self.frame_sugerencias.grid(row=2, column=0, padx=10, pady=(0, 10), sticky="ew")
 
-    def _seleccionar_sugerencia(self, id_estudiante, nombre, curso, paralelo):
+    def _seleccionar_sugerencia(self, id_estudiante, nombre, curso, paralelo, sexo):
         self.estudiante_seleccionado_id = id_estudiante
         self.entry_nombre.delete(0, "end")
         self.entry_nombre.insert(0, nombre)

@@ -38,6 +38,8 @@ DIAGNOSTICOS = [
     "Costura",
     "Epistaxis",
     "Cólico Mentrual",
+    "Toalla Higienica",
+    "Malestar General",
     "Dolor de Estomago",
     "Otros"
 ]
