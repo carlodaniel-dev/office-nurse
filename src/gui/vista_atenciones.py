@@ -115,7 +115,11 @@ class VistaAtenciones(ctk.CTkFrame):
         self.textbox_recomendacion.grid(row=11, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="ew")
 
         # --- Botón guardar ---
-        btn_guardar = ctk.CTkButton(self, text="Guardar atención", command=self._guardar_atencion)
+        btn_guardar = ctk.CTkButton(self, text="Guardar atención", command=self._guardar_atencion,
+        fg_color=estilos.COLOR_NEGRO,
+        hover_color=estilos.COLOR_NEGRO_SUAVE,
+        text_color=estilos.COLOR_AMARILLO,
+    )
         btn_guardar.grid(row=2, column=0, sticky="w", pady=(0, 20))
 
         # --- Tabla de atenciones del día ---
@@ -153,7 +157,7 @@ class VistaAtenciones(ctk.CTkFrame):
                 anchor="w",
                 fg_color="transparent",
                 text_color=("gray10", "gray90"),
-                hover_color=("gray75", "gray30"),
+                hover_color=("COLOR_NEGRO"),
                 command=lambda i=id_est, n=nombre, c=curso, p=paralelo, s=sexo: self._seleccionar_sugerencia(i, n, c, p, s)
             )
             boton.pack(fill="x", padx=2, pady=2)
@@ -321,7 +325,7 @@ class VistaAtenciones(ctk.CTkFrame):
             btn_detalle = ctk.CTkButton(
                 self.frame_tabla, text="Ver detalle",
                 width=estilos.ANCHO_BOTON_ACCION, height=estilos.ALTO_BOTON_ACCION,
-                fg_color=estilos.COLOR_SECUNDARIO, hover_color=estilos.COLOR_SECUNDARIO_HOVER,
+                fg_color=estilos.COLOR_VERDE, hover_color=estilos.COLOR_VERDE_HOVER,
                 command=lambda a=atencion: self._mostrar_detalle_atencion(a)
             )
             btn_detalle.grid(row=fila_idx, column=5, padx=5, pady=3, sticky="w")

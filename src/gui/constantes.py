@@ -23,7 +23,7 @@ CURSOS = [
 
 PARALELOS = [
     "A", "B", "C", "D", 
-    "BCG", 
+    "BGU", 
     "Informatica", 
     "Diseño Gráfico", 
     "Mecanica Automotriz", 

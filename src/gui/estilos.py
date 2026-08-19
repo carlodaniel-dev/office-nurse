@@ -7,12 +7,20 @@ entre las distintas vistas del sistema.
 import customtkinter as ctk
 
 # ---------- Colores ----------
-COLOR_PELIGRO = "#B3261E"       # acciones eliminar)
+COLOR_PELIGRO = "#B3261E"          # acciones destructivas (eliminar)
 COLOR_PELIGRO_HOVER = "#8C1D18"
-COLOR_SECUNDARIO = "gray40"        # botones neutros (detalle, cancelar)
-COLOR_SECUNDARIO_HOVER = "gray30"
+
 COLOR_TEXTO_GRIS = "gray"
 COLOR_SUGERENCIA_FONDO = ("gray90", "gray20")
+
+COLOR_VERDE = "#D8F768"
+COLOR_VERDE_HOVER = "#95AA48"
+
+COLOR_AMARILLO = "#FFC72C"
+COLOR_AMARILLO_HOVER = "#816517"
+
+COLOR_NEGRO = "#1C1C1C"
+COLOR_NEGRO_SUAVE = "#4B4949"
 
 # ---------- Fuentes ----------
 def fuente_titulo():

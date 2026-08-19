@@ -4,17 +4,20 @@ Contiene el menú de navegación y el contenedor donde se muestran las vistas.
 """
 
 import customtkinter as ctk
+import os
 
-ctk.set_appearance_mode("light")
-ctk.set_default_color_theme("blue")
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme(
+    os.path.join(os.path.dirname(__file__), "tema_escuela.json")
+)
 
 
 class VentanaPrincipal(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Sistema de Enfermería Escolar")
-        self.geometry("1100x650")
+        self.title("Registro de Atenciones - Enfermería | AMMI")
+        self.geometry("1100x700")
         self.minsize(900, 550)
 
         self.grid_columnconfigure(0, weight=0)
@@ -28,22 +31,22 @@ class VentanaPrincipal(ctk.CTk):
         self.mostrar_vista_atenciones()
 
     def _crear_menu_lateral(self):
-        self.menu_lateral = ctk.CTkFrame(self, width=220, corner_radius=0)
+        self.menu_lateral = ctk.CTkFrame(self, width=170, corner_radius=0)
         self.menu_lateral.grid(row=0, column=0, sticky="nsew")
         self.menu_lateral.grid_rowconfigure(6, weight=1)
 
         titulo = ctk.CTkLabel(
             self.menu_lateral,
-            text="🩺 Enfermería\nEscolar",
+            text="Departamento\nEnfermería",
             font=ctk.CTkFont(size=18, weight="bold"),
             justify="left"
         )
         titulo.grid(row=0, column=0, padx=20, pady=(25, 30), sticky="w")
 
         botones = [
-            ("📋  Registrar atención", self.mostrar_vista_atenciones),
-            ("🧑‍🎓  Estudiantes", self.mostrar_vista_estudiantes),
-            ("🔄  Sincronización", self.mostrar_vista_sincronizacion),
+            ("REGISTRAR ATENCION", self.mostrar_vista_atenciones),
+            ("ESTUDIANTES", self.mostrar_vista_estudiantes),
+            ("SINCRONIZACION", self.mostrar_vista_sincronizacion),
         ]
 
         for i, (texto, comando) in enumerate(botones, start=1):
