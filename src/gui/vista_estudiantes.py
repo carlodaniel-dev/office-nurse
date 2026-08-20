@@ -53,7 +53,7 @@ class VistaEstudiantes(ctk.CTkFrame):
         for i, peso in enumerate(pesos):
             frame_encabezados.grid_columnconfigure(i, weight=peso)
 
-        encabezados = ["Nombre", "Fecha", "Diagnóstico", "Paralelo", "Curso", ""]
+        encabezados = ["Nombre", "Fecha", "Diagnóstico", "Curso", "Paralelo", "", ""]
         for i, texto in enumerate(encabezados):
             ctk.CTkLabel(
                 frame_encabezados, text=texto, font=estilos.fuente_etiqueta(), anchor="w"
@@ -99,10 +99,10 @@ class VistaEstudiantes(ctk.CTkFrame):
             ctk.CTkLabel(self.frame_tabla, text=diagnostico or "—", anchor="w").grid(
                 row=fila_idx, column=2, padx=10, pady=6, sticky="w"
             )
-            ctk.CTkLabel(self.frame_tabla, text=paralelo or "—", anchor="w").grid(
+            ctk.CTkLabel(self.frame_tabla, text=curso, anchor="w").grid(
                 row=fila_idx, column=3, padx=10, pady=6, sticky="w"
             )
-            ctk.CTkLabel(self.frame_tabla, text=curso, anchor="w").grid(
+            ctk.CTkLabel(self.frame_tabla, text=paralelo or "—", anchor="w").grid(
                 row=fila_idx, column=4, padx=10, pady=6, sticky="w"
             )
 
