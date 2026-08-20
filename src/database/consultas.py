@@ -180,3 +180,22 @@ def eliminar_atencion(id_atencion):
     cursor.execute("DELETE FROM atenciones WHERE id = ?", (id_atencion,))
     conexion.commit()
     conexion.close()
+
+def listar_atenciones_pendientes():
+    """
+    Devuelve todas las atenciones (de cualquier fecha) que aún no tienen
+    hora de salida registrada. Ordenadas de la más antigua a la más reciente,
+    para que las pendientes más urgentes aparezcan primero.
+    """
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT a.*, e.nombre, e.curso, e.paralelo, e.sexo
+        FROM atenciones a
+        JOIN estudiantes e ON a.estudiante_id = e.id
+        WHERE a.hora_salida IS NULL
+        ORDER BY a.fecha ASC, a.hora_llegada ASC
+    """)
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
