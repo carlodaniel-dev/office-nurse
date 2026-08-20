@@ -303,9 +303,9 @@ class VistaAtenciones(ctk.CTkFrame):
             id_atencion = atencion[0]
             hora_llegada = atencion[3]
             hora_salida = atencion[4]
-            nombre = atencion[-3]
-            curso = atencion[-2]
-            paralelo = atencion[-1]
+            nombre = atencion[-4]
+            curso = atencion[-3]
+            paralelo = atencion[-2]
 
             ctk.CTkLabel(self.frame_tabla, text=hora_llegada).grid(row=fila_idx, column=0, padx=5, pady=3, sticky="w")
             ctk.CTkLabel(self.frame_tabla, text=nombre).grid(row=fila_idx, column=1, padx=5, pady=3, sticky="w")
