@@ -62,6 +62,7 @@ class VentanaPrincipal(ctk.CTk):
             ("NUEVA ATENCION", self.mostrar_vista_atenciones),
             ("ATENCIONES PENDIENTES", self.mostrar_vista_pendientes),
             ("ESTUDIANTES", self.mostrar_vista_estudiantes),
+            ("REPORTES", self.mostrar_vista_reportes),
             ("SINCRONIZACION", self.mostrar_vista_sincronizacion),
         ]
 
@@ -106,14 +107,16 @@ class VentanaPrincipal(ctk.CTk):
         from gui.vista_atenciones import VistaAtenciones
         from gui.vista_pendientes import VistaPendientes
         from gui.vista_estudiantes import VistaEstudiantes
+        from gui.vista_reportes import VistaReportes
         from gui.vista_sincronizacion import VistaSincronizacion
 
         self.vista_atenciones = VistaAtenciones(self.contenedor)
         self.vista_pendientes = VistaPendientes(self.contenedor)
         self.vista_estudiantes = VistaEstudiantes(self.contenedor)
+        self.vista_reportes = VistaReportes(self.contenedor)
         self.vista_sincronizacion = VistaSincronizacion(self.contenedor)
 
-        for vista in (self.vista_atenciones, self.vista_pendientes, self.vista_estudiantes, self.vista_sincronizacion):
+        for vista in (self.vista_atenciones, self.vista_pendientes, self.vista_estudiantes, self.vista_reportes, self.vista_sincronizacion):
             vista.grid(row=0, column=0, sticky="nsew")
 
     # ------------------------------------------------------------
@@ -136,6 +139,11 @@ class VentanaPrincipal(ctk.CTk):
 
     def mostrar_vista_sincronizacion(self):
         self.vista_sincronizacion.tkraise()
+        
+    def mostrar_vista_reportes(self):
+        self.vista_reportes.tkraise()
+        if hasattr(self.vista_reportes, "_cargar_datos"):
+            self.vista_reportes._cargar_datos()
 
 
 if __name__ == "__main__":

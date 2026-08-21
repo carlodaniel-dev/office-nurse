@@ -199,3 +199,85 @@ def listar_atenciones_pendientes():
     resultados = cursor.fetchall()
     conexion.close()
     return resultados
+
+# ==========================================================
+# GRAFICAS
+# ==========================================================
+
+def listar_meses_disponibles():
+    """Devuelve los meses (YYYY-MM) que tienen atenciones registradas, más reciente primero."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT DISTINCT strftime('%Y-%m', fecha) AS mes
+        FROM atenciones
+        ORDER BY mes DESC
+    """)
+    resultados = [fila[0] for fila in cursor.fetchall()]
+    conexion.close()
+    return resultados
+
+
+def contar_atenciones_por_mes():
+    """Devuelve (mes, total) de TODOS los meses con datos, ordenado cronológicamente (para la tendencia)."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT strftime('%Y-%m', fecha) AS mes, COUNT(*) AS total
+        FROM atenciones
+        GROUP BY mes
+        ORDER BY mes ASC
+    """)
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+
+def contar_diagnosticos_por_mes(mes, limite=8):
+    """Devuelve (diagnostico, total) del mes indicado, los más frecuentes primero."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT diagnostico, COUNT(*) AS total
+        FROM atenciones
+        WHERE strftime('%Y-%m', fecha) = ?
+        GROUP BY diagnostico
+        ORDER BY total DESC
+        LIMIT ?
+    """, (mes, limite))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+
+def contar_atenciones_por_curso_mes(mes):
+    """Devuelve (curso, total) del mes indicado, agrupado por curso."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT e.curso, COUNT(*) AS total
+        FROM atenciones a
+        JOIN estudiantes e ON a.estudiante_id = e.id
+        WHERE strftime('%Y-%m', a.fecha) = ?
+        GROUP BY e.curso
+    """, (mes,))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+def contar_atenciones_por_especialidad_mes(mes):
+    """Devuelve (curso, paralelo, total) del mes, agrupado por curso Y paralelo.
+    Se usa para desglosar Bachillerato por especialidad, ya que la especialidad
+    vive en el campo 'paralelo', no en 'curso'."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT e.curso, e.paralelo, COUNT(*) AS total
+        FROM atenciones a
+        JOIN estudiantes e ON a.estudiante_id = e.id
+        WHERE strftime('%Y-%m', a.fecha) = ?
+        GROUP BY e.curso, e.paralelo
+    """, (mes,))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados

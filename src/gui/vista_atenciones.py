@@ -6,7 +6,10 @@ Incluye autocompletado de estudiante por nombre.
 import customtkinter as ctk
 from tkinter import messagebox
 from datetime import datetime
-from gui.constantes import CURSOS, PARALELOS, DIAGNOSTICOS
+from gui.constantes import (
+    CURSOS, PARALELOS, DIAGNOSTICOS,
+    CURSOS_EGB, CURSOS_BACHILLERATO, PARALELOS_EGB, ESPECIALIDADES_BACHILLERATO,
+)
 from gui import estilos
 
 from database.consultas import (
@@ -49,15 +52,20 @@ class VistaAtenciones(ctk.CTkFrame):
         ctk.CTkLabel(frame_formulario, text="Curso *", anchor="w").grid(
             row=0, column=1, padx=10, pady=(10, 0), sticky="w"
         )
-        self.combo_curso = ctk.CTkComboBox(frame_formulario, values=CURSOS, state="readonly")
+        self.combo_curso = ctk.CTkComboBox(
+            frame_formulario, values=CURSOS, state="readonly",
+            command=self._on_cambiar_curso
+        )
         self.combo_curso.set("")
         self.combo_curso.grid(row=1, column=1, padx=10, pady=(0, 0), sticky="ew")
 
         ctk.CTkLabel(frame_formulario, text="Paralelo *", anchor="w").grid(
             row=0, column=2, padx=10, pady=(10, 0), sticky="w"
         )
-        self.combo_paralelo = ctk.CTkComboBox(frame_formulario, values=PARALELOS, state="readonly")
-        self.combo_paralelo.set("")
+        self.combo_paralelo = ctk.CTkComboBox(
+            frame_formulario, values=["Selecciona un curso primero"], state="disabled"
+        )
+        self.combo_paralelo.set("Selecciona un curso primero")
         self.combo_paralelo.grid(row=1, column=2, padx=10, pady=(0, 0), sticky="ew")
 
         # Frame de sugerencias del nombre (se coloca en el grid solo cuando hay resultados)
@@ -131,6 +139,22 @@ class VistaAtenciones(ctk.CTkFrame):
         self.frame_tabla.grid_columnconfigure((0, 1, 2, 3, 4, 5), weight=1)
 
     # ------------------------------------------------------------
+    # Curso -> Paralelo dinámico (A/B/C/D para EGB, especialidades para Bachillerato)
+    # ------------------------------------------------------------
+    def _on_cambiar_curso(self, curso_seleccionado):
+        """Actualiza las opciones de Paralelo según el curso elegido:
+        A/B/C/D para EGB, especialidades para Bachillerato."""
+        if curso_seleccionado in CURSOS_BACHILLERATO:
+            nuevas_opciones = ESPECIALIDADES_BACHILLERATO
+        elif curso_seleccionado in CURSOS_EGB:
+            nuevas_opciones = PARALELOS_EGB
+        else:
+            nuevas_opciones = PARALELOS  # respaldo, por si algún curso no está en ninguna lista
+
+        self.combo_paralelo.configure(values=nuevas_opciones, state="readonly")
+        self.combo_paralelo.set("")  # limpia la selección previa, ya no aplica
+
+    # ------------------------------------------------------------
     # Autocompletado de nombre
     # ------------------------------------------------------------
     def _on_escribir_nombre(self, event=None):
@@ -169,6 +193,7 @@ class VistaAtenciones(ctk.CTkFrame):
         self.entry_nombre.delete(0, "end")
         self.entry_nombre.insert(0, nombre)
         self.combo_curso.set(curso)
+        self._on_cambiar_curso(curso)  # ajusta las opciones de paralelo según el curso
         self.combo_paralelo.set(paralelo or "")
         self.var_sexo.set(sexo or "")
         self.frame_sugerencias.grid_forget()
@@ -188,6 +213,8 @@ class VistaAtenciones(ctk.CTkFrame):
         nombre = self.entry_nombre.get().strip()
         curso = self.combo_curso.get().strip()
         paralelo = self.combo_paralelo.get().strip() or None
+        if paralelo == "Selecciona un curso primero":
+            paralelo = None
         sexo = self.var_sexo.get().strip()
 
         if not nombre:
@@ -265,7 +292,8 @@ class VistaAtenciones(ctk.CTkFrame):
     def _limpiar_formulario(self):
         self.entry_nombre.delete(0, "end")
         self.combo_curso.set("")
-        self.combo_paralelo.set("")
+        self.combo_paralelo.configure(values=["Selecciona un curso primero"], state="disabled")
+        self.combo_paralelo.set("Selecciona un curso primero")
         self.var_sexo.set("")
         self.entry_saturacion.delete(0, "end")
         self.entry_frecuencia.delete(0, "end")
