@@ -86,7 +86,7 @@ class VentanaPrincipal(ctk.CTk):
             imagen_logo = ctk.CTkImage(
                 light_image=Image.open(ruta_logo),
                 dark_image=Image.open(ruta_logo),
-                size=(160, 75)
+                size=(160, 55)
             )
             label_logo = ctk.CTkLabel(self.menu_lateral, image=imagen_logo, text="")
             label_logo.grid(row=7, column=0, pady=(0, 15), sticky="s")

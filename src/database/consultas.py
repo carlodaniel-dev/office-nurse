@@ -201,7 +201,7 @@ def listar_atenciones_pendientes():
     return resultados
 
 # ==========================================================
-# GRAFICAS
+# GRAFICAS -  REPORTES
 # ==========================================================
 
 def listar_meses_disponibles():
@@ -285,6 +285,48 @@ def contar_atenciones_por_especialidad_mes(mes):
         WHERE strftime('%Y-%m', a.fecha) = ?
         GROUP BY e.curso, e.paralelo
     """, (mes,))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+def contar_atenciones_por_mes_filtrado(curso, paralelo):
+    """Tendencia mensual de atenciones para un curso+paralelo específico."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT strftime('%Y-%m', a.fecha) AS mes, COUNT(*) AS total
+        FROM atenciones a
+        JOIN estudiantes e ON a.estudiante_id = e.id
+        WHERE e.curso = ? AND e.paralelo = ?
+        GROUP BY mes
+        ORDER BY mes ASC
+    """, (curso, paralelo))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+
+def contar_diagnosticos_por_mes_filtrado(mes, curso, paralelo, diagnosticos_predefinidos, limite=8):
+    """Diagnósticos más frecuentes de un curso+paralelo específico, en un mes dado.
+    Igual que contar_diagnosticos_por_mes, pero además filtrado por curso/paralelo."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    placeholders = ",".join("?" for _ in diagnosticos_predefinidos)
+    cursor.execute(f"""
+        SELECT
+            CASE
+                WHEN a.diagnostico IN ({placeholders}) THEN a.diagnostico
+                ELSE 'Otros'
+            END AS diagnostico_agrupado,
+            COUNT(*) AS total
+        FROM atenciones a
+        JOIN estudiantes e ON a.estudiante_id = e.id
+        WHERE strftime('%Y-%m', a.fecha) = ? AND e.curso = ? AND e.paralelo = ?
+        GROUP BY diagnostico_agrupado
+        ORDER BY total DESC
+        LIMIT ?
+    """, (*diagnosticos_predefinidos, mes, curso, paralelo, limite))
     resultados = cursor.fetchall()
     conexion.close()
     return resultados

@@ -5,16 +5,16 @@ Constantes usadas en la interfaz gráfica.
 CURSOS = [
     "Inic. 3 Años",
     "Inic. 4 Años",
-    "1 BCG",
-    "2 BCG",
-    "3 BCG",
-    "4 BCG",
-    "5 BCG",
-    "6 BCG",
-    "7 BCG",
-    "8 BCG",
-    "9 BCG",
-    "10 BCG",
+    "1 EGB",
+    "2 EGB",
+    "3 EGB",
+    "4 EGB",
+    "5 EGB",
+    "6 EGB",
+    "7 EGB",
+    "8 EGB",
+    "9 EGB",
+    "10 EGB",
     "1 Bach.",
     "2 Bach.",
     "3 Bach.",
@@ -24,9 +24,9 @@ CURSOS = [
 # Agrupación de cursos para reportes
 # --------------------------------------------
 CURSOS_EGB = [
-    "Inic. 3 Años", "Inic. 4 Años", "1 BCG",
-        "2 BCG","3 BCG","4 BCG","5 BCG","6 BCG",
-        "7 BCG","8 BCG","9 BCG","10 BCG",
+    "Inic. 3 Años", "Inic. 4 Años", "1 EGB",
+        "2 EGB","3 EGB","4 EGB","5 EGB","6 EGB",
+        "7 EGB","8 EGB","9 EGB","10 EGB",
 ]
 
 CURSOS_BACHILLERATO = [
@@ -36,6 +36,14 @@ CURSOS_BACHILLERATO = [
 ESPECIALIDADES_BACHILLERATO = [
     "BGU", "Informatica", "Diseño Gráfico", "Mecanica Automotriz", "Servicios Hoteleros",
 ]
+
+ESPECIALIDADES_ABREVIADAS = {
+    "BGU": "BGU",
+    "Informatica": "Inf.",
+    "Diseño Gráfico": "D.G.",
+    "Mecanica Automotriz": "M.A.",
+    "Servicios Hoteleros": "S. H",
+}
 
 PARALELOS_EGB = ["A", "B", "C", "D"]
 
