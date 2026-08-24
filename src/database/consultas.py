@@ -233,18 +233,25 @@ def contar_atenciones_por_mes():
     return resultados
 
 
-def contar_diagnosticos_por_mes(mes, limite=8):
+def contar_diagnosticos_por_mes(mes, diagnosticos_predefinidos, limite=8):
     """Devuelve (diagnostico, total) del mes indicado, los más frecuentes primero."""
     conexion = conectar()
     cursor = conexion.cursor()
-    cursor.execute("""
-        SELECT diagnostico, COUNT(*) AS total
+    
+    placeholders = ",".join("?" for _ in diagnosticos_predefinidos)
+    cursor.execute(f"""
+        SELECT
+            CASE
+                WHEN diagnostico IN ({placeholders}) THEN diagnostico
+                ELSE 'Otros'
+            END AS diagnostico_agrupado,
+            COUNT(*) AS total
         FROM atenciones
         WHERE strftime('%Y-%m', fecha) = ?
-        GROUP BY diagnostico
+        GROUP BY diagnostico_agrupado
         ORDER BY total DESC
         LIMIT ?
-    """, (mes, limite))
+    """, (*diagnosticos_predefinidos, mes, limite))
     resultados = cursor.fetchall()
     conexion.close()
     return resultados

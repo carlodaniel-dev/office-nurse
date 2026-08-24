@@ -22,8 +22,7 @@ from database.consultas import (
     contar_atenciones_por_curso_mes,
     contar_atenciones_por_especialidad_mes,
 )
-from gui.constantes import CURSOS_EGB, CURSOS_BACHILLERATO, ESPECIALIDADES_BACHILLERATO
-
+from gui.constantes import CURSOS_EGB, CURSOS_BACHILLERATO, ESPECIALIDADES_BACHILLERATO, DIAGNOSTICOS
 
 
 MESES_ES = {
@@ -105,13 +104,14 @@ class VistaReportes(ctk.CTkFrame):
         )
 
         # --- 2. Diagnósticos más frecuentes del mes seleccionado ---
-        datos_diagnosticos = contar_diagnosticos_por_mes(mes_iso)
+        diagnosticos_predefinidos = [d for d in DIAGNOSTICOS if d != "Otros"]
+        datos_diagnosticos = contar_diagnosticos_por_mes(mes_iso, diagnosticos_predefinidos)
         self._crear_grafica_barras(
             f"Diagnósticos más frecuentes — {mes_actual}",
             [d for d, _ in datos_diagnosticos], [t for _, t in datos_diagnosticos],
             row=1, column=0, columnspan=2, horizontal=True
         )
-
+        
         # --- 3. Atenciones por curso (EGB) del mes seleccionado ---
         datos_curso = dict(contar_atenciones_por_curso_mes(mes_iso))
         
