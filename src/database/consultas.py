@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from database.modelos import conectar
 
-ORIGEN_PC = "PC1"  # <-- cambiar a "PC2" en la otra computadora
+ORIGEN_PC = "PC2"  # <-- cambiar a "PC2" en la otra computadora
 
 # ==========================================================
 # ESTUDIANTES
@@ -330,3 +330,209 @@ def contar_diagnosticos_por_mes_filtrado(mes, curso, paralelo, diagnosticos_pred
     resultados = cursor.fetchall()
     conexion.close()
     return resultados
+
+# ==========================================================
+# EXPORTACION / SINCRONIZACION DE DATOS 
+# ==========================================================
+
+def exportar_datos_mes(mes):
+    """
+    Devuelve (estudiantes, atenciones) de un mes específico, listos para exportar.
+    Solo incluye los estudiantes que tienen al menos una atención en ese mes
+    (para no exportar el catálogo completo innecesariamente).
+    """
+    conexion = conectar()
+    cursor = conexion.cursor()
+
+    cursor.execute("""
+        SELECT id, estudiante_id, fecha, hora_llegada, hora_salida, saturacion,
+            temperatura, frecuencia_cardiaca, diagnostico, recomendacion,
+            enfermera_responsable, origen_pc, fecha_registro
+        FROM atenciones
+        WHERE strftime('%Y-%m', fecha) = ?
+    """, (mes,))
+    columnas_atencion = [d[0] for d in cursor.description]
+    atenciones = [dict(zip(columnas_atencion, fila)) for fila in cursor.fetchall()]
+
+    ids_estudiantes = list({a["estudiante_id"] for a in atenciones})
+    estudiantes = []
+    if ids_estudiantes:
+        placeholders = ",".join("?" for _ in ids_estudiantes)
+        cursor.execute(f"""
+            SELECT id, nombre, curso, paralelo, sexo, origen_pc, fecha_creacion
+            FROM estudiantes
+            WHERE id IN ({placeholders})
+        """, ids_estudiantes)
+        columnas_est = [d[0] for d in cursor.description]
+        estudiantes = [dict(zip(columnas_est, fila)) for fila in cursor.fetchall()]
+
+    conexion.close()
+    return estudiantes, atenciones
+
+# ==========================================================
+# IMPORTACIÓN / SINCRONIZACIÓN
+# ==========================================================
+
+def existe_estudiante_id(id_estudiante):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT 1 FROM estudiantes WHERE id = ?", (id_estudiante,))
+    resultado = cursor.fetchone()
+    conexion.close()
+    return resultado is not None
+
+def insertar_estudiante_con_id(id_estudiante, nombre, curso, paralelo, sexo, origen_pc, fecha_creacion):
+    """Inserta un estudiante preservando su id original (usado al importar)."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        INSERT INTO estudiantes (id, nombre, curso, paralelo, sexo, origen_pc, fecha_creacion)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (id_estudiante, nombre, curso, paralelo, sexo, origen_pc, fecha_creacion))
+    conexion.commit()
+    conexion.close()
+
+
+def existe_atencion_id(id_atencion):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT 1 FROM atenciones WHERE id = ?", (id_atencion,))
+    resultado = cursor.fetchone()
+    conexion.close()
+    return resultado is not None
+
+
+def buscar_atenciones_similares(estudiante_id, fecha, hora_llegada, ventana_minutos=15):
+    """
+    Busca atenciones YA EXISTENTES en la BD local para el mismo estudiante y fecha,
+    con hora de llegada dentro de una ventana de minutos. Se usa para detectar
+    posibles duplicados al importar (misma visita registrada por error en ambas PCs).
+    """
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT id, hora_llegada, diagnostico, origen_pc
+        FROM atenciones
+        WHERE estudiante_id = ? AND fecha = ?
+    """, (estudiante_id, fecha))
+    resultados = cursor.fetchall()
+    conexion.close()
+
+    similares = []
+    try:
+        hora_nueva = datetime.strptime(hora_llegada, "%H:%M:%S")
+    except (ValueError, TypeError):
+        return similares
+
+    for id_existente, hora_existente_str, diagnostico_existente, origen_existente in resultados:
+        try:
+            hora_existente = datetime.strptime(hora_existente_str, "%H:%M:%S")
+        except (ValueError, TypeError):
+            continue
+        diferencia_min = abs((hora_nueva - hora_existente).total_seconds()) / 60
+        if diferencia_min <= ventana_minutos:
+            similares.append({
+                "id": id_existente,
+                "hora_llegada": hora_existente_str,
+                "diagnostico": diagnostico_existente,
+                "origen_pc": origen_existente,
+            })
+    return similares
+
+
+def insertar_atencion_con_id(datos, estudiante_id):
+    """Inserta una atención preservando su id y demás campos originales (usado al importar)."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        INSERT INTO atenciones (
+            id, estudiante_id, fecha, hora_llegada, hora_salida, saturacion,
+            temperatura, frecuencia_cardiaca, diagnostico, recomendacion,
+            enfermera_responsable, origen_pc, fecha_registro
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        datos["id"], estudiante_id, datos["fecha"], datos["hora_llegada"], datos.get("hora_salida"),
+        datos.get("saturacion"), datos.get("temperatura"), datos.get("frecuencia_cardiaca"),
+        datos.get("diagnostico"), datos.get("recomendacion"), datos.get("enfermera_responsable"),
+        datos.get("origen_pc"), datos.get("fecha_registro"),
+    ))
+    conexion.commit()
+    conexion.close()
+
+def procesar_importacion(paquete):
+    """
+    Procesa un paquete de importación (diccionario ya cargado desde JSON).
+    Inserta automáticamente estudiantes nuevos y atenciones sin conflicto.
+    Devuelve (resumen, atenciones_para_revisar) donde las atenciones con
+    posible duplicado NO se insertan; quedan pendientes de decisión manual.
+    """
+    estudiantes_importados = paquete.get("estudiantes", [])
+    atenciones_importadas = paquete.get("atenciones", [])
+
+    mapa_estudiantes = {}  # id_original_del_import -> id a usar en esta BD local
+    estudiantes_nuevos = 0
+    estudiantes_reutilizados = 0
+
+    for est in estudiantes_importados:
+        id_import = est["id"]
+
+        if existe_estudiante_id(id_import):
+            mapa_estudiantes[id_import] = id_import
+            continue
+
+        id_local_existente = buscar_estudiante_exacto(est["nombre"], est["curso"], est.get("paralelo"))
+        if id_local_existente:
+            mapa_estudiantes[id_import] = id_local_existente
+            estudiantes_reutilizados += 1
+            continue
+
+        insertar_estudiante_con_id(
+            id_import, est["nombre"], est["curso"], est.get("paralelo"),
+            est.get("sexo"), est.get("origen_pc"), est.get("fecha_creacion")
+        )
+        mapa_estudiantes[id_import] = id_import
+        estudiantes_nuevos += 1
+
+    atenciones_nuevas = 0
+    atenciones_ya_existentes = 0
+    atenciones_para_revisar = []
+
+    for at in atenciones_importadas:
+        if existe_atencion_id(at["id"]):
+            atenciones_ya_existentes += 1
+            continue
+
+        estudiante_id_local = mapa_estudiantes.get(at["estudiante_id"], at["estudiante_id"])
+        similares = buscar_atenciones_similares(estudiante_id_local, at["fecha"], at["hora_llegada"])
+
+        if similares:
+            atenciones_para_revisar.append({
+                "atencion_importada": at,
+                "estudiante_id_local": estudiante_id_local,
+                "similares_existentes": similares,
+            })
+            continue
+
+        insertar_atencion_con_id(at, estudiante_id_local)
+        atenciones_nuevas += 1
+
+    resumen = {
+        "estudiantes_nuevos": estudiantes_nuevos,
+        "estudiantes_reutilizados": estudiantes_reutilizados,
+        "atenciones_nuevas": atenciones_nuevas,
+        "atenciones_ya_existentes": atenciones_ya_existentes,
+        "atenciones_para_revisar": len(atenciones_para_revisar),
+    }
+    return resumen, atenciones_para_revisar
+
+def registrar_log_sincronizacion(registros_nuevos, duplicados_detectados, notas):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        INSERT INTO log_sincronizacion (
+            id, registros_nuevos_pc1, registros_nuevos_pc2,
+            duplicados_detectados, duplicados_resueltos, notas
+        ) VALUES (?, ?, 0, ?, 0, ?)
+    """, (str(uuid.uuid4()), registros_nuevos, duplicados_detectados, notas))
+    conexion.commit()
+    conexion.close()
