@@ -265,7 +265,6 @@ class VistaAtenciones(ctk.CTkFrame):
             recomendacion=recomendacion,
         )
 
-        messagebox.showinfo("Éxito", "Atención registrada correctamente.")
         self._limpiar_formulario()
         self._cargar_atenciones_del_dia()
 

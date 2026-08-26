@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from database.modelos import conectar
 
-ORIGEN_PC = "PC2"  # <-- cambiar a "PC2" en la otra computadora
+ORIGEN_PC = "PC1"  # <-- cambiar a "PC2" en la otra computadora
 
 # ==========================================================
 # ESTUDIANTES

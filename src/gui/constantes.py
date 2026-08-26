@@ -40,9 +40,9 @@ ESPECIALIDADES_BACHILLERATO = [
 ESPECIALIDADES_ABREVIADAS = {
     "BGU": "BGU",
     "Informatica": "Inf.",
-    "Diseño Gráfico": "D.G.",
-    "Mecanica Automotriz": "M.A.",
-    "Servicios Hoteleros": "S. H",
+    "Diseño Gráfico": "DG.",
+    "Mecanica Automotriz": "MA.",
+    "Servicios Hoteleros": "SH.",
 }
 
 PARALELOS_EGB = ["A", "B", "C", "D"]

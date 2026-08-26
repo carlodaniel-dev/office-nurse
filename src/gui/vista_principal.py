@@ -60,7 +60,7 @@ class VentanaPrincipal(ctk.CTk):
 
         botones = [
             ("NUEVA ATENCION", self.mostrar_vista_atenciones),
-            ("ATENCIONES PENDIENTES", self.mostrar_vista_pendientes),
+            ("SALIDAS PENDIENTES", self.mostrar_vista_pendientes),
             ("ESTUDIANTES", self.mostrar_vista_estudiantes),
             ("REPORTES", self.mostrar_vista_reportes),
             ("SINCRONIZACION", self.mostrar_vista_sincronizacion),
