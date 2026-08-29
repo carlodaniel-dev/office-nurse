@@ -5,6 +5,8 @@ env/
 # Bases de datos (datos sensibles de estudiantes)
 data/*.db
 data/*.db-journal
+data/session.json
+data/ultimo_usuario.json
 
 # Python
 __pycache__/

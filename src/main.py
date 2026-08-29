@@ -6,30 +6,43 @@ import sys
 import os
 import ctypes
 
-# Declara la app como DPI-aware ANTES de crear cualquier ventana.
-# Esto evita que Windows reescale la ventana (incluyendo la barra de
-# título) como si fuera una imagen, lo cual la hace ver más pequeña
-# o borrosa comparada con otras ventanas nativas.
 if sys.platform == "win32":
     try:
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Per-Monitor DPI aware
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
     except Exception:
         try:
-            ctypes.windll.user32.SetProcessDPIAware()  # Fallback para Windows más viejos
+            ctypes.windll.user32.SetProcessDPIAware()
         except Exception:
             pass
 
-# Permite importar módulos desde src/ sin problemas de rutas
 sys.path.append(os.path.dirname(__file__))
 
 from database.modelos import crear_tablas
+from auth import cargar_sesion_valida, establecer_usuario_actual
 from gui.vista_principal import VentanaPrincipal
 
 
 def main():
-    crear_tablas()  # se asegura de que la BD y tablas existan al iniciar
-    app = VentanaPrincipal()
-    app.mainloop()
+    crear_tablas()
+
+    while True:
+        sesion = cargar_sesion_valida()
+
+        if not sesion:
+            from gui.vista_login import VentanaLogin
+            login = VentanaLogin()
+            login.mainloop()
+            if not login.sesion_iniciada:
+                return  # el usuario cerró la ventana de login sin iniciar sesión
+            sesion = cargar_sesion_valida()
+
+        establecer_usuario_actual(sesion["usuario_id"], sesion["nombre_completo"])
+
+        app = VentanaPrincipal()
+        app.mainloop()
+
+        if not getattr(app, "solicito_cerrar_sesion", False):
+            break  # se cerró la ventana normalmente, termina el programa
 
 
 if __name__ == "__main__":

@@ -106,7 +106,7 @@ class VistaReportes(ctk.CTkFrame):
         etiquetas_tendencia = [_nombre_mes(m) for m, _ in datos_tendencia]
         valores_tendencia = [total for _, total in datos_tendencia]
         self._crear_grafica_linea(
-            "Tendencia de atenciones por mes", etiquetas_tendencia, valores_tendencia,
+            "Tendencia de Atenciones por Mes", etiquetas_tendencia, valores_tendencia,
             row=1, columnspan=2
         )
 
@@ -114,7 +114,7 @@ class VistaReportes(ctk.CTkFrame):
         diagnosticos_predefinidos = [d for d in DIAGNOSTICOS if d != "Otros"]
         datos_diagnosticos = contar_diagnosticos_por_mes(mes_iso, diagnosticos_predefinidos)
         self._crear_grafica_barras(
-            f"Diagnósticos más frecuentes — {mes_actual}",
+            f"Diagnósticos más Frecuentes — {mes_actual}",
             [d for d, _ in datos_diagnosticos], [t for _, t in datos_diagnosticos],
             row=2, column=0, columnspan=2, horizontal=True
         )

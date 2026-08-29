@@ -6,6 +6,10 @@ Contiene el menú de navegación y el contenedor donde se muestran las vistas.
 import customtkinter as ctk
 import os
 from PIL import Image
+from auth import obtener_usuario_actual, cerrar_sesion
+from tkinter import messagebox
+import time
+from auth import obtener_usuario_actual, cerrar_sesion, cargar_sesion_valida, refrescar_sesion
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme(
@@ -31,6 +35,10 @@ class VentanaPrincipal(ctk.CTk):
         self._crear_vistas()
 
         self.mostrar_vista_atenciones()
+        self._ultima_actividad = time.time()
+        self._registrar_eventos_actividad()
+        self._verificar_sesion_periodicamente()
+        self.solicito_cerrar_sesion = False
 
     def _configurar_icono(self):
         """
@@ -49,6 +57,9 @@ class VentanaPrincipal(ctk.CTk):
         self.menu_lateral = ctk.CTkFrame(self, width=170, corner_radius=0)
         self.menu_lateral.grid(row=0, column=0, sticky="nsew")
         self.menu_lateral.grid_rowconfigure(6, weight=1)
+
+        usuario = obtener_usuario_actual()
+        nombre_mostrado = usuario["nombre_completo"] if usuario else "Usuario"
 
         titulo = ctk.CTkLabel(
             self.menu_lateral,
@@ -78,6 +89,13 @@ class VentanaPrincipal(ctk.CTk):
             )
             boton.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
 
+        btn_cerrar_sesion = ctk.CTkButton(
+            self.menu_lateral, text="Cerrar sesión", fg_color="transparent",
+            border_width=1, text_color=("gray10", "gray90"),
+            command=self._cerrar_sesion
+        )
+        btn_cerrar_sesion.grid(row=10, column=0, padx=15, pady=(0, 10), sticky="ew")
+        
         # --- Logo institucional (parte inferior del menú) ---
         ruta_logo = os.path.join(
             os.path.dirname(__file__), "..", "..", "assets", "logo_ammi.png"
@@ -144,6 +162,51 @@ class VentanaPrincipal(ctk.CTk):
         self.vista_reportes.tkraise()
         if hasattr(self.vista_reportes, "_cargar_datos"):
             self.vista_reportes._cargar_datos()
+    
+    def _cerrar_sesion(self):
+        confirmar = messagebox.askyesno("Cerrar sesión", "¿Seguro que deseas cerrar sesión?")
+        if not confirmar:
+            return
+        cerrar_sesion()
+        self.solicito_cerrar_sesion = True
+        self.destroy()
+    
+    def _verificar_sesion_periodicamente(self):
+        """
+        Revisa cada 30 segundos si ha habido actividad reciente del usuario.
+        Si pasaron 12 minutos SIN ninguna interacción (mouse/teclado/clics),
+        cierra la sesión automáticamente. Si hubo actividad, refresca la
+        sesión guardada en disco para extender su vigencia.
+        """
+        from auth import DURACION_SESION_MINUTOS
+
+        segundos_inactivo = time.time() - self._ultima_actividad
+        limite_segundos = DURACION_SESION_MINUTOS * 60
+
+        if segundos_inactivo >= limite_segundos:
+            messagebox.showwarning(
+                "Sesión expirada",
+                f"Tu sesión se cerró por {DURACION_SESION_MINUTOS} minutos de inactividad.\n"
+                "Debes iniciar sesión de nuevo."
+            )
+            cerrar_sesion()
+            self.solicito_cerrar_sesion = True
+            self.destroy()
+            return
+
+        refrescar_sesion()  # hubo actividad reciente (o al menos no venció aún), extiende la sesión guardada
+        self.after(30_000, self._verificar_sesion_periodicamente)
+
+        self.after(30_000, self._verificar_sesion_periodicamente)  # vuelve a chequear en 30 segundos
+
+    def _registrar_eventos_actividad(self):
+        """
+        Escucha movimiento de mouse, teclado y clics en TODA la ventana
+        (incluyendo ventanas emergentes como editar/detalle), para saber
+        cuándo hubo actividad real del usuario.
+        """
+        for evento in ("<Motion>", "<Key>", "<Button>"):
+            self.bind_all(evento, self._marcar_actividad)
 
 
 if __name__ == "__main__":

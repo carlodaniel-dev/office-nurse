@@ -23,7 +23,7 @@ class VistaPendientes(ctk.CTkFrame):
         self._cargar_pendientes()
 
     def _crear_widgets(self):
-        titulo = ctk.CTkLabel(self, text="Atenciones pendientes de salida", font=estilos.fuente_titulo())
+        titulo = ctk.CTkLabel(self, text="Atenciones con Salida Pendiente", font=estilos.fuente_titulo())
         titulo.grid(row=0, column=0, sticky="w", pady=(0, 5))
 
         self.label_total = ctk.CTkLabel(self, text="", text_color=estilos.COLOR_TEXTO_GRIS)

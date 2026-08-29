@@ -28,7 +28,7 @@ class VistaEstudiantes(ctk.CTkFrame):
         self._cargar_atenciones()
 
     def _crear_widgets(self):
-        titulo = ctk.CTkLabel(self, text="Historial de atenciones", font=estilos.fuente_titulo())
+        titulo = ctk.CTkLabel(self, text="Historial de Atenciones", font=estilos.fuente_titulo())
         titulo.grid(row=0, column=0, sticky="w", pady=(0, 15))
 
         # --- Buscador ---
@@ -143,7 +143,7 @@ class VistaEstudiantes(ctk.CTkFrame):
 
         ventana = ctk.CTkToplevel(self)
         ventana.title("Editar atención")
-        ventana.geometry("460x735")
+        ventana.geometry("460x740")
         ventana.grab_set()
 
         contenedor = ctk.CTkFrame(ventana, fg_color="transparent")

@@ -11,6 +11,7 @@ from gui.constantes import (
     CURSOS_EGB, CURSOS_BACHILLERATO, PARALELOS_EGB, ESPECIALIDADES_BACHILLERATO,
 )
 from gui import estilos
+from auth import obtener_usuario_actual
 
 from database.consultas import (
     buscar_estudiantes_por_nombre,
@@ -256,6 +257,7 @@ class VistaAtenciones(ctk.CTkFrame):
             diagnostico = diagnostico_seleccionado
         recomendacion = self.textbox_recomendacion.get("1.0", "end").strip()
 
+        usuario = obtener_usuario_actual()
         crear_atencion(
             estudiante_id=estudiante_id,
             saturacion=saturacion,
@@ -263,6 +265,7 @@ class VistaAtenciones(ctk.CTkFrame):
             frecuencia_cardiaca=frecuencia,
             diagnostico=diagnostico,
             recomendacion=recomendacion,
+            enfermera_responsable=usuario["id"] if usuario else None,
         )
 
         self._limpiar_formulario()

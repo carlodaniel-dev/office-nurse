@@ -536,3 +536,41 @@ def registrar_log_sincronizacion(registros_nuevos, duplicados_detectados, notas)
     """, (str(uuid.uuid4()), registros_nuevos, duplicados_detectados, notas))
     conexion.commit()
     conexion.close()
+
+# ==========================================================
+# USUARIOS
+# ==========================================================
+
+def existe_usuario(usuario):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT 1 FROM usuarios WHERE usuario = ?", (usuario,))
+    resultado = cursor.fetchone()
+    conexion.close()
+    return resultado is not None
+
+
+def crear_usuario(nombre_completo, usuario, password_hash, rol="enfermera"):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    id_usuario = str(uuid.uuid4())
+    cursor.execute("""
+        INSERT INTO usuarios (id, nombre_completo, usuario, password_hash, rol, activo)
+        VALUES (?, ?, ?, ?, ?, 1)
+    """, (id_usuario, nombre_completo, usuario, password_hash, rol))
+    conexion.commit()
+    conexion.close()
+    return id_usuario
+
+
+def obtener_usuario_por_usuario(usuario):
+    """Devuelve (id, nombre_completo, usuario, password_hash, rol, activo) o None."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT id, nombre_completo, usuario, password_hash, rol, activo
+        FROM usuarios WHERE usuario = ?
+    """, (usuario,))
+    resultado = cursor.fetchone()
+    conexion.close()
+    return resultado
