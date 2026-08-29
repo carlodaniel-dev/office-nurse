@@ -5,10 +5,9 @@ Contiene el menú de navegación y el contenedor donde se muestran las vistas.
 
 import customtkinter as ctk
 import os
-from PIL import Image
-from auth import obtener_usuario_actual, cerrar_sesion
-from tkinter import messagebox
 import time
+from PIL import Image
+from tkinter import messagebox
 from auth import obtener_usuario_actual, cerrar_sesion, cargar_sesion_valida, refrescar_sesion
 
 ctk.set_appearance_mode("dark")
@@ -29,16 +28,18 @@ class VentanaPrincipal(ctk.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
+        self.solicito_cerrar_sesion = False
+
         self._configurar_icono()
         self._crear_menu_lateral()
         self._crear_contenedor_principal()
         self._crear_vistas()
 
         self.mostrar_vista_atenciones()
+
         self._ultima_actividad = time.time()
         self._registrar_eventos_actividad()
         self._verificar_sesion_periodicamente()
-        self.solicito_cerrar_sesion = False
 
     def _configurar_icono(self):
         """
@@ -56,11 +57,10 @@ class VentanaPrincipal(ctk.CTk):
     def _crear_menu_lateral(self):
         self.menu_lateral = ctk.CTkFrame(self, width=170, corner_radius=0)
         self.menu_lateral.grid(row=0, column=0, sticky="nsew")
-        self.menu_lateral.grid_rowconfigure(6, weight=1)
+        self.menu_lateral.grid_columnconfigure(0, weight=1)
+        self.menu_lateral.grid_rowconfigure(6, weight=1)  # empuja logo + pie hacia abajo
 
-        usuario = obtener_usuario_actual()
-        nombre_mostrado = usuario["nombre_completo"] if usuario else "Usuario"
-
+        # --- Fila 0: título ---
         titulo = ctk.CTkLabel(
             self.menu_lateral,
             text="Departamento\nEnfermería",
@@ -69,10 +69,11 @@ class VentanaPrincipal(ctk.CTk):
         )
         titulo.grid(row=0, column=0, padx=20, pady=(25, 30), sticky="w")
 
+        # --- Filas 1-5: menú de páginas ---
         botones = [
             ("NUEVA ATENCION", self.mostrar_vista_atenciones),
             ("SALIDAS PENDIENTES", self.mostrar_vista_pendientes),
-            ("ESTUDIANTES", self.mostrar_vista_estudiantes),
+            ("HISTORIAL DE ATENCIONES", self.mostrar_vista_estudiantes),
             ("REPORTES", self.mostrar_vista_reportes),
             ("SINCRONIZACION", self.mostrar_vista_sincronizacion),
         ]
@@ -89,14 +90,9 @@ class VentanaPrincipal(ctk.CTk):
             )
             boton.grid(row=i, column=0, padx=15, pady=6, sticky="ew")
 
-        btn_cerrar_sesion = ctk.CTkButton(
-            self.menu_lateral, text="Cerrar sesión", fg_color="transparent",
-            border_width=1, text_color=("gray10", "gray90"),
-            command=self._cerrar_sesion
-        )
-        btn_cerrar_sesion.grid(row=10, column=0, padx=15, pady=(0, 10), sticky="ew")
-        
-        # --- Logo institucional (parte inferior del menú) ---
+        # --- Fila 6: espaciador flexible (weight=1) empuja lo siguiente al fondo ---
+
+        # --- Fila 7: logo institucional ---
         ruta_logo = os.path.join(
             os.path.dirname(__file__), "..", "..", "assets", "logo_ammi.png"
         )
@@ -109,6 +105,28 @@ class VentanaPrincipal(ctk.CTk):
             label_logo = ctk.CTkLabel(self.menu_lateral, image=imagen_logo, text="")
             label_logo.grid(row=7, column=0, pady=(0, 15), sticky="s")
 
+        # --- Fila 8: nombre de usuario + botón cerrar sesión, en la misma fila ---
+        usuario = obtener_usuario_actual()
+        nombre_mostrado = usuario["nombre_completo"] if usuario else "Usuario"
+
+        frame_pie = ctk.CTkFrame(self.menu_lateral, fg_color="transparent")
+        frame_pie.grid(row=8, column=0, padx=15, pady=(0, 15), sticky="ew")
+        frame_pie.grid_columnconfigure(0, weight=1)
+
+        label_usuario = ctk.CTkLabel(
+            frame_pie, text=f"👤 {nombre_mostrado}",
+            text_color="gray", anchor="w", font=ctk.CTkFont(size=11)
+        )
+        label_usuario.grid(row=0, column=0, sticky="w")
+
+        btn_cerrar_sesion = ctk.CTkButton(
+            frame_pie, text="Salir", width=50, height=24,
+            fg_color="transparent", border_width=1,
+            text_color=("gray10", "gray90"),
+            command=self._cerrar_sesion
+        )
+        btn_cerrar_sesion.grid(row=0, column=1, sticky="e")
+
     def _crear_contenedor_principal(self):
         self.contenedor = ctk.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.contenedor.grid(row=0, column=1, sticky="nsew", padx=20, pady=20)
@@ -117,7 +135,7 @@ class VentanaPrincipal(ctk.CTk):
 
     def _crear_vistas(self):
         """
-        Crea las 4 vistas UNA SOLA VEZ y las apila en la misma celda del grid.
+        Crea las 5 vistas UNA SOLA VEZ y las apila en la misma celda del grid.
         Nunca se destruyen mientras la app está abierta (evita el bug de
         CustomTkinter con el ScalingTracker de los CTkComboBox al cambiar
         de pantalla/DPI).
@@ -157,12 +175,12 @@ class VentanaPrincipal(ctk.CTk):
 
     def mostrar_vista_sincronizacion(self):
         self.vista_sincronizacion.tkraise()
-        
+
     def mostrar_vista_reportes(self):
         self.vista_reportes.tkraise()
         if hasattr(self.vista_reportes, "_cargar_datos"):
             self.vista_reportes._cargar_datos()
-    
+
     def _cerrar_sesion(self):
         confirmar = messagebox.askyesno("Cerrar sesión", "¿Seguro que deseas cerrar sesión?")
         if not confirmar:
@@ -170,13 +188,13 @@ class VentanaPrincipal(ctk.CTk):
         cerrar_sesion()
         self.solicito_cerrar_sesion = True
         self.destroy()
-    
+
     def _verificar_sesion_periodicamente(self):
         """
         Revisa cada 30 segundos si ha habido actividad reciente del usuario.
-        Si pasaron 12 minutos SIN ninguna interacción (mouse/teclado/clics),
-        cierra la sesión automáticamente. Si hubo actividad, refresca la
-        sesión guardada en disco para extender su vigencia.
+        Si pasaron los minutos configurados SIN ninguna interacción (mouse/
+        teclado/clics), cierra la sesión automáticamente. Si hubo actividad,
+        refresca la sesión guardada en disco para extender su vigencia.
         """
         from auth import DURACION_SESION_MINUTOS
 
@@ -194,10 +212,8 @@ class VentanaPrincipal(ctk.CTk):
             self.destroy()
             return
 
-        refrescar_sesion()  # hubo actividad reciente (o al menos no venció aún), extiende la sesión guardada
+        refrescar_sesion()
         self.after(30_000, self._verificar_sesion_periodicamente)
-
-        self.after(30_000, self._verificar_sesion_periodicamente)  # vuelve a chequear en 30 segundos
 
     def _registrar_eventos_actividad(self):
         """
@@ -207,6 +223,9 @@ class VentanaPrincipal(ctk.CTk):
         """
         for evento in ("<Motion>", "<Key>", "<Button>"):
             self.bind_all(evento, self._marcar_actividad)
+
+    def _marcar_actividad(self, event=None):
+        self._ultima_actividad = time.time()
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from gui.constantes import (
 )
 from gui import estilos
 from auth import obtener_usuario_actual
+from gui.utilidades import forzar_mayusculas
 
 from database.consultas import (
     buscar_estudiantes_por_nombre,
@@ -159,6 +160,7 @@ class VistaAtenciones(ctk.CTkFrame):
     # Autocompletado de nombre
     # ------------------------------------------------------------
     def _on_escribir_nombre(self, event=None):
+        forzar_mayusculas(self.entry_nombre)
         self.estudiante_seleccionado_id = None
 
         texto = self.entry_nombre.get().strip()
@@ -211,7 +213,7 @@ class VistaAtenciones(ctk.CTkFrame):
     # Guardar atención
     # ------------------------------------------------------------
     def _guardar_atencion(self):
-        nombre = self.entry_nombre.get().strip()
+        nombre = self.entry_nombre.get().strip().upper()
         curso = self.combo_curso.get().strip()
         paralelo = self.combo_paralelo.get().strip() or None
         if paralelo == "Selecciona un curso primero":

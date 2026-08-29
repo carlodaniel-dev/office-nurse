@@ -12,8 +12,10 @@ import json
 import secrets
 from datetime import datetime, timedelta
 
+
 RUTA_ULTIMO_USUARIO = os.path.join(os.path.dirname(__file__), "..", "data", "ultimo_usuario.json")
 DURACION_SESION_MINUTOS = 2
+CODIGO_AUTORIZACION_CUENTAS = "AmmI.2026."
 
 _usuario_actual = None  # se llena en memoria al iniciar sesión, para uso rápido en toda la app
 

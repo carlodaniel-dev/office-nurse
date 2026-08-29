@@ -8,6 +8,7 @@ import customtkinter as ctk
 from tkinter import messagebox
 from gui import estilos
 from gui.constantes import CURSOS, PARALELOS, DIAGNOSTICOS
+from gui.utilidades import forzar_mayusculas
 
 from database.consultas import (
     listar_todas_atenciones,
@@ -160,6 +161,7 @@ class VistaEstudiantes(ctk.CTkFrame):
         entry_nombre = ctk.CTkEntry(contenedor)
         entry_nombre.insert(0, nombre)
         entry_nombre.grid(row=2, column=0, columnspan=2, pady=(0, 10), sticky="ew")
+        entry_nombre.bind("<KeyRelease>", lambda e: forzar_mayusculas(entry_nombre))
 
         ctk.CTkLabel(contenedor, text="Curso", anchor="w").grid(row=3, column=0, padx=(0, 5), sticky="w")
         combo_curso = ctk.CTkComboBox(contenedor, values=CURSOS, state="readonly")
@@ -242,7 +244,7 @@ class VistaEstudiantes(ctk.CTkFrame):
         textbox_recomendacion.grid(row=17, column=0, columnspan=2, pady=(0, 15), sticky="ew")
 
         def guardar():
-            nuevo_nombre = entry_nombre.get().strip()
+            nuevo_nombre = entry_nombre.get().strip().upper()
             nuevo_curso = combo_curso.get().strip()
             nuevo_paralelo = combo_paralelo.get().strip()
             nuevo_sexo = var_sexo.get().strip()
