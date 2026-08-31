@@ -4,6 +4,10 @@ Autenticación y manejo de sesión local.
   sin dependencias externas que puedan dar problemas de instalación).
 - Sesión persistida en data/session.json con expiración de 8 horas, para no
   pedir login cada vez que se abre el programa dentro de la misma jornada.
+  
+  total atendidos mes - otras
+  3 veces semana 
+  5 veces mes
 """
 
 import hashlib
@@ -14,7 +18,7 @@ from datetime import datetime, timedelta
 
 
 RUTA_ULTIMO_USUARIO = os.path.join(os.path.dirname(__file__), "..", "data", "ultimo_usuario.json")
-DURACION_SESION_MINUTOS = 2
+DURACION_SESION_MINUTOS = 7
 CODIGO_AUTORIZACION_CUENTAS = "AmmI.2026."
 
 _usuario_actual = None  # se llena en memoria al iniciar sesión, para uso rápido en toda la app

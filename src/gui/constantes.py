@@ -34,15 +34,15 @@ CURSOS_BACHILLERATO = [
 ]
 
 ESPECIALIDADES_BACHILLERATO = [
-    "BGU", "Informatica", "Diseño Gráfico", "Mecanica Automotriz", "Servicios Hoteleros",
+    "BCG", "Informatica", "Diseño Gráfico", "Mecanica Automotriz", "Hosteleria",
 ]
 
 ESPECIALIDADES_ABREVIADAS = {
-    "BGU": "BGU",
-    "Informatica": "Inf.",
+    "BCG": "BCG",
+    "Informatica": "INF.",
     "Diseño Gráfico": "DG.",
     "Mecanica Automotriz": "MA.",
-    "Servicios Hoteleros": "SH.",
+    "Hosteleria": "HAC.",
 }
 
 PARALELOS_EGB = ["A", "B", "C", "D"]
@@ -71,8 +71,8 @@ DIAGNOSTICOS = [
 
 PARALELOS = [
     "A", "B", "C", "D", 
-    "BGU", 
+    "BCG", 
     "Informatica", 
     "Diseño Gráfico", 
     "Mecanica Automotriz", 
-    "Servicios Hoteleros",]
+    "Hosteleria",]

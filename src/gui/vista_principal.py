@@ -9,6 +9,7 @@ import time
 from PIL import Image
 from tkinter import messagebox
 from auth import obtener_usuario_actual, cerrar_sesion, cargar_sesion_valida, refrescar_sesion
+from config import obtener_origen_pc, guardar_origen_pc
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme(
@@ -31,6 +32,10 @@ class VentanaPrincipal(ctk.CTk):
         self.solicito_cerrar_sesion = False
 
         self._configurar_icono()
+        
+        if obtener_origen_pc() is None:
+            self._solicitar_identificacion_pc()
+        
         self._crear_menu_lateral()
         self._crear_contenedor_principal()
         self._crear_vistas()
@@ -53,6 +58,49 @@ class VentanaPrincipal(ctk.CTk):
         )
         if os.path.exists(ruta_icono):
             self.after(250, lambda: self.iconbitmap(ruta_icono))
+
+    def _solicitar_identificacion_pc(self):
+        """
+        Se muestra SOLO la primera vez que se abre el programa en esta PC.
+        Pide identificarla como PC1 o PC2 y lo guarda en data/config.json
+        para no volver a preguntar en futuros inicios.
+        """
+        ventana = ctk.CTkToplevel(self)
+        ventana.title("Configuración inicial")
+        ventana.geometry("400x220")
+        ventana.grab_set()
+        ventana.protocol("WM_DELETE_WINDOW", lambda: None)  # no permite cerrar sin elegir
+
+        contenedor = ctk.CTkFrame(ventana, fg_color="transparent")
+        contenedor.pack(fill="both", expand=True, padx=25, pady=25)
+
+        ctk.CTkLabel(
+            contenedor, text="¿Cuál computadora es esta?",
+            font=ctk.CTkFont(size=16, weight="bold")
+        ).pack(pady=(0, 10))
+
+        ctk.CTkLabel(
+            contenedor,
+            text="Esto se pregunta una sola vez, y sirve para identificar\n"
+                "de qué PC vienen los registros al sincronizar.",
+            text_color="gray", justify="center"
+        ).pack(pady=(0, 20))
+
+        def elegir(valor):
+            guardar_origen_pc(valor)
+            ventana.destroy()
+
+        frame_botones = ctk.CTkFrame(contenedor, fg_color="transparent")
+        frame_botones.pack()
+
+        ctk.CTkButton(
+            frame_botones, text="Es la PC1", width=140, command=lambda: elegir("PC1")
+        ).pack(side="left", padx=(0, 10))
+        ctk.CTkButton(
+            frame_botones, text="Es la PC2", width=140, command=lambda: elegir("PC2")
+        ).pack(side="left")
+
+        self.wait_window(ventana)  # bloquea hasta que el usuario elija
 
     def _crear_menu_lateral(self):
         self.menu_lateral = ctk.CTkFrame(self, width=170, corner_radius=0)

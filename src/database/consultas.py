@@ -5,8 +5,7 @@ Módulo de consultas (CRUD) para estudiantes y atenciones.
 import uuid
 from datetime import datetime
 from database.modelos import conectar
-
-ORIGEN_PC = "PC1"  # <-- cambiar a "PC2" en la otra computadora
+from config import obtener_origen_pc
 
 # ==========================================================
 # ESTUDIANTES
@@ -21,7 +20,7 @@ def crear_estudiante(nombre, curso, paralelo=None, sexo=None):
     cursor.execute("""
         INSERT INTO estudiantes (id, nombre, curso, paralelo, sexo, origen_pc)
         VALUES (?, ?, ?, ?, ?, ?)
-    """, (id_estudiante, nombre, curso, paralelo, sexo, ORIGEN_PC))
+    """, (id_estudiante, nombre, curso, paralelo, sexo, obtener_origen_pc()))
 
     conexion.commit()
     conexion.close()
@@ -103,6 +102,15 @@ def actualizar_estudiante(id_estudiante, nombre, curso, paralelo, sexo):
     conexion.close()
     return filas_afectadas > 0
 
+def obtener_estudiante_por_id(id_estudiante):
+    """Devuelve la fila completa de un estudiante según su id, o None si no existe."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT * FROM estudiantes WHERE id = ?", (id_estudiante,))
+    resultado = cursor.fetchone()
+    conexion.close()
+    return resultado
+
 # ==========================================================
 # ATENCIONES
 # ==========================================================
@@ -127,7 +135,7 @@ def crear_atencion(estudiante_id, saturacion=None, temperatura=None,
     """, (
         id_atencion, estudiante_id, fecha, hora_llegada, saturacion, temperatura,
         frecuencia_cardiaca, diagnostico, recomendacion,
-        enfermera_responsable, ORIGEN_PC
+        enfermera_responsable, obtener_origen_pc()
     ))
 
     conexion.commit()

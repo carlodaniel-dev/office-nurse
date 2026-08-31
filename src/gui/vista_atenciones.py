@@ -184,7 +184,7 @@ class VistaAtenciones(ctk.CTkFrame):
                 anchor="w",
                 fg_color="transparent",
                 text_color=("gray10", "gray90"),
-                hover_color=("COLOR_NEGRO"),
+                hover_color=estilos.COLOR_NEGRO,
                 command=lambda i=id_est, n=nombre, c=curso, p=paralelo, s=sexo: self._seleccionar_sugerencia(i, n, c, p, s)
             )
             boton.pack(fill="x", padx=2, pady=2)

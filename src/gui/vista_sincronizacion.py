@@ -13,11 +13,12 @@ from gui import estilos
 from database.consultas import (
     listar_meses_disponibles,
     exportar_datos_mes,
-    ORIGEN_PC,
+    obtener_origen_pc,
     procesar_importacion,
     registrar_log_sincronizacion,
     existe_estudiante_id,
     insertar_atencion_con_id,
+    obtener_estudiante_por_id,
 )
 
 MESES_ES = {
@@ -26,11 +27,9 @@ MESES_ES = {
     "09": "Septiembre", "10": "Octubre", "11": "Noviembre", "12": "Diciembre",
 }
 
-
 def _nombre_mes(mes_iso):
     anio, mes = mes_iso.split("-")
     return f"{MESES_ES.get(mes, mes)} {anio}"
-
 
 class VistaSincronizacion(ctk.CTkFrame):
     def __init__(self, master):
@@ -43,7 +42,7 @@ class VistaSincronizacion(ctk.CTkFrame):
         titulo.grid(row=0, column=0, sticky="w", pady=(0, 5))
 
         subtitulo = ctk.CTkLabel(
-            self, text=f"Esta PC está identificada como: {ORIGEN_PC}",
+            self, text=f"Esta PC está identificada como: {obtener_origen_pc()}",
             text_color=estilos.COLOR_TEXTO_GRIS
         )
         subtitulo.grid(row=1, column=0, sticky="w", pady=(0, 20))
@@ -118,14 +117,14 @@ class VistaSincronizacion(ctk.CTkFrame):
             return
 
         paquete = {
-            "origen_pc": ORIGEN_PC,
+            "origen_pc": obtener_origen_pc(),
             "mes": mes_iso,
             "fecha_exportacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "estudiantes": estudiantes,
             "atenciones": atenciones,
         }
 
-        nombre_sugerido = f"enfermeria_{ORIGEN_PC}_{mes_iso}.json"
+        nombre_sugerido = f"enfermeria_{obtener_origen_pc()}_{mes_iso}.json"
         ruta_destino = filedialog.asksaveasfilename(
             title="Guardar exportación",
             initialfile=nombre_sugerido,
@@ -170,10 +169,10 @@ class VistaSincronizacion(ctk.CTkFrame):
             messagebox.showerror("Archivo inválido", "Este archivo no tiene el formato esperado de exportación.")
             return
 
-        if paquete.get("origen_pc") == ORIGEN_PC:
+        if paquete.get("origen_pc") == obtener_origen_pc():
             confirmar = messagebox.askyesno(
                 "Mismo origen",
-                f"Este archivo fue exportado desde ESTA MISMA PC ({ORIGEN_PC}).\n"
+                f"Este archivo fue exportado desde ESTA MISMA PC ({obtener_origen_pc()}).\n"
                 "Normalmente solo deberías importar archivos generados por la OTRA PC.\n\n"
                 "¿Deseas continuar de todas formas?"
             )
