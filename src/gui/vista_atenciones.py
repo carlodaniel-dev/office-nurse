@@ -21,8 +21,8 @@ from database.consultas import (
     crear_atencion,
     cerrar_atencion,
     listar_atenciones_por_fecha,
+    obtener_frecuencia_estudiante,
 )
-
 
 class VistaAtenciones(ctk.CTkFrame):
     def __init__(self, master):
@@ -72,6 +72,12 @@ class VistaAtenciones(ctk.CTkFrame):
 
         # Frame de sugerencias del nombre (se coloca en el grid solo cuando hay resultados)
         self.frame_sugerencias = ctk.CTkFrame(frame_formulario, fg_color=estilos.COLOR_SUGERENCIA_FONDO)
+
+        # Alerta de visitas frecuentes (se coloca en el grid solo si aplica)
+        self.label_alerta_frecuencia = ctk.CTkLabel(
+            frame_formulario, text="", text_color=estilos.COLOR_AMARILLO,
+            font=estilos.fuente_etiqueta(), anchor="w", wraplength=600, justify="left"
+        )
 
         # --- Fila 2: Saturación, Frecuencia, Temperatura ---
         ctk.CTkLabel(frame_formulario, text="Saturación (%)", anchor="w").grid(
@@ -161,6 +167,7 @@ class VistaAtenciones(ctk.CTkFrame):
     # ------------------------------------------------------------
     def _on_escribir_nombre(self, event=None):
         forzar_mayusculas(self.entry_nombre)
+        self.label_alerta_frecuencia.grid_forget()
         self.estudiante_seleccionado_id = None
 
         texto = self.entry_nombre.get().strip()
@@ -195,11 +202,21 @@ class VistaAtenciones(ctk.CTkFrame):
         self.estudiante_seleccionado_id = id_estudiante
         self.entry_nombre.delete(0, "end")
         self.entry_nombre.insert(0, nombre)
+        self._on_cambiar_curso(curso)
         self.combo_curso.set(curso)
-        self._on_cambiar_curso(curso)  # ajusta las opciones de paralelo según el curso
         self.combo_paralelo.set(paralelo or "")
         self.var_sexo.set(sexo or "")
         self.frame_sugerencias.grid_forget()
+        self._verificar_frecuencia_estudiante(id_estudiante)
+
+    def _verificar_frecuencia_estudiante(self, estudiante_id):
+        conteo_semana, conteo_mes = obtener_frecuencia_estudiante(estudiante_id)
+        if conteo_semana >= 3 or conteo_mes >= 5:
+            texto = f"⚠️ Este estudiante ya tiene {conteo_semana} visita(s) esta semana y {conteo_mes} este mes."
+            self.label_alerta_frecuencia.configure(text=texto)
+            self.label_alerta_frecuencia.grid(row=2, column=0, columnspan=3, padx=10, pady=(0, 10), sticky="w")
+        else:
+            self.label_alerta_frecuencia.grid_forget()
 
     def _on_cambiar_diagnostico(self, valor_seleccionado):
         if valor_seleccionado == "Otros":
@@ -308,6 +325,7 @@ class VistaAtenciones(ctk.CTkFrame):
         self.textbox_recomendacion.delete("1.0", "end")
         self.estudiante_seleccionado_id = None
         self.frame_sugerencias.grid_forget()
+        self.label_alerta_frecuencia.grid_forget()
 
     # ------------------------------------------------------------
     # Tabla de atenciones del día

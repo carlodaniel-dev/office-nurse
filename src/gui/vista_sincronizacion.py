@@ -9,17 +9,22 @@ from tkinter import messagebox, filedialog
 import json
 from datetime import datetime
 
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
+
 from gui import estilos
 from database.consultas import (
     listar_meses_disponibles,
     exportar_datos_mes,
-    obtener_origen_pc,
     procesar_importacion,
     registrar_log_sincronizacion,
-    existe_estudiante_id,
-    insertar_atencion_con_id,
     obtener_estudiante_por_id,
+    insertar_atencion_con_id,
+    listar_usuarios_por_ids,
 )
+
+from config import obtener_origen_pc
 
 MESES_ES = {
     "01": "Enero", "02": "Febrero", "03": "Marzo", "04": "Abril",
@@ -39,29 +44,33 @@ class VistaSincronizacion(ctk.CTkFrame):
 
     def _crear_widgets(self):
         titulo = ctk.CTkLabel(self, text="Sincronización", font=estilos.fuente_titulo())
-        titulo.grid(row=0, column=0, sticky="w", pady=(0, 5))
+        titulo.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 5))
 
         subtitulo = ctk.CTkLabel(
             self, text=f"Esta PC está identificada como: {obtener_origen_pc()}",
             text_color=estilos.COLOR_TEXTO_GRIS
         )
-        subtitulo.grid(row=1, column=0, sticky="w", pady=(0, 20))
+        subtitulo.grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 20))
 
-        # --- Tarjeta de exportación ---
+        # Dos columnas de igual ancho, para que las tarjetas queden lado a lado
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+        # --- Tarjeta de exportación (columna izquierda) ---
         tarjeta = ctk.CTkFrame(self)
-        tarjeta.grid(row=2, column=0, sticky="ew")
+        tarjeta.grid(row=2, column=0, sticky="new", padx=(0, 10))
         tarjeta.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(
             tarjeta, text="Exportar datos", font=estilos.fuente_seccion_pequena(), anchor="w"
-        ).grid(row=0, column=0, columnspan=2, padx=15, pady=(15, 5), sticky="w")
+        ).grid(row=0, column=0, padx=15, pady=(15, 5), sticky="w")
 
         ctk.CTkLabel(
             tarjeta,
-            text="Genera un archivo con los estudiantes y atenciones del mes elegido,\n"
-                "para transferirlo a la otra PC (USB o correo electrónico).",
+            text="Genera un archivo con los estudiantes y atenciones del mes\n"
+                "elegido, para transferirlo a la otra PC (USB o correo).",
             text_color=estilos.COLOR_TEXTO_GRIS, anchor="w", justify="left"
-        ).grid(row=1, column=0, columnspan=2, padx=15, pady=(0, 15), sticky="w")
+        ).grid(row=1, column=0, padx=15, pady=(0, 15), sticky="w")
 
         ctk.CTkLabel(tarjeta, text="Mes a exportar", anchor="w").grid(
             row=2, column=0, padx=15, sticky="w"
@@ -72,20 +81,27 @@ class VistaSincronizacion(ctk.CTkFrame):
         self._mapa_mes = dict(zip(etiquetas_meses, meses)) if meses else {}
 
         self.combo_mes = ctk.CTkComboBox(
-            tarjeta, values=etiquetas_meses, state="readonly" if meses else "disabled", width=250
+            tarjeta, values=etiquetas_meses, state="readonly" if meses else "disabled"
         )
         self.combo_mes.set(etiquetas_meses[0])
-        self.combo_mes.grid(row=3, column=0, padx=15, pady=(0, 15), sticky="w")
+        self.combo_mes.grid(row=3, column=0, padx=15, pady=(0, 15), sticky="ew")
 
         self.btn_exportar = ctk.CTkButton(
-            tarjeta, text="Exportar mes seleccionado", command=self._exportar,
+            tarjeta, text="Exportar mes seleccionado (.json)", command=self._exportar,
             state="normal" if meses else "disabled"
         )
-        self.btn_exportar.grid(row=4, column=0, padx=15, pady=(0, 20), sticky="w")
-        
-                # --- Tarjeta de importación ---
+        self.btn_exportar.grid(row=4, column=0, padx=15, pady=(0, 10), sticky="ew")
+
+        self.btn_exportar_excel = ctk.CTkButton(
+            tarjeta, text="Exportar a Excel (.xlsx)", command=self._exportar_excel,
+            fg_color=estilos.COLOR_AMARILLO, hover_color=estilos.COLOR_AMARILLO_HOVER,
+            state="normal" if meses else "disabled"
+        )
+        self.btn_exportar_excel.grid(row=5, column=0, padx=15, pady=(0, 20), sticky="ew")
+
+        # --- Tarjeta de importación (columna derecha) ---
         tarjeta_importar = ctk.CTkFrame(self)
-        tarjeta_importar.grid(row=3, column=0, sticky="ew", pady=(20, 0))
+        tarjeta_importar.grid(row=2, column=1, sticky="new", padx=(10, 0))
         tarjeta_importar.grid_columnconfigure(0, weight=1)
 
         ctk.CTkLabel(
@@ -94,14 +110,14 @@ class VistaSincronizacion(ctk.CTkFrame):
 
         ctk.CTkLabel(
             tarjeta_importar,
-            text="Selecciona el archivo .json exportado desde la otra PC para fusionarlo\n"
-                "con los datos de esta computadora.",
+            text="Selecciona el archivo .json exportado desde la otra\n"
+                "PC para fusionarlo con los datos de esta computadora.",
             text_color=estilos.COLOR_TEXTO_GRIS, anchor="w", justify="left"
         ).grid(row=1, column=0, padx=15, pady=(0, 15), sticky="w")
 
         ctk.CTkButton(
             tarjeta_importar, text="Seleccionar archivo e importar", command=self._importar
-        ).grid(row=2, column=0, padx=15, pady=(0, 20), sticky="w")
+        ).grid(row=2, column=0, padx=15, pady=(0, 20), sticky="ew")
 
     def _exportar(self):
         etiqueta_mes = self.combo_mes.get()
@@ -147,6 +163,80 @@ class VistaSincronizacion(ctk.CTkFrame):
             f"correspondientes a {etiqueta_mes}.\n\nArchivo guardado en:\n{ruta_destino}"
         )
         
+    def _exportar_excel(self):
+        etiqueta_mes = self.combo_mes.get()
+        mes_iso = self._mapa_mes.get(etiqueta_mes)
+        if not mes_iso:
+            messagebox.showwarning("Atención", "No hay un mes válido seleccionado.")
+            return
+
+        estudiantes, atenciones = exportar_datos_mes(mes_iso)
+        if not atenciones:
+            messagebox.showinfo("Sin datos", f"No hay atenciones registradas en {etiqueta_mes}.")
+            return
+
+        mapa_estudiantes = {e["id"]: e for e in estudiantes}
+        ids_enfermeras = {a.get("enfermera_responsable") for a in atenciones}
+        mapa_enfermeras = listar_usuarios_por_ids(ids_enfermeras)
+
+        atenciones_ordenadas = sorted(atenciones, key=lambda a: (a["fecha"], a["hora_llegada"]))
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Atenciones"
+
+        encabezados = [
+            "Fecha", "Hora Llegada", "Hora Salida", "Nombre", "Curso", "Paralelo", "Sexo",
+            "Saturación (%)", "Temperatura (°C)", "Frecuencia Cardíaca (lpm)",
+            "Diagnóstico", "Recomendación", "Enfermera Responsable", "Origen PC",
+        ]
+        ws.append(encabezados)
+
+        fill_encabezado = PatternFill(start_color="1C1C1C", end_color="1C1C1C", fill_type="solid")
+        font_encabezado = Font(color="FFC72C", bold=True)
+        for celda in ws[1]:
+            celda.fill = fill_encabezado
+            celda.font = font_encabezado
+            celda.alignment = Alignment(horizontal="center", vertical="center")
+
+        for at in atenciones_ordenadas:
+            est = mapa_estudiantes.get(at["estudiante_id"], {})
+            nombre_enfermera = mapa_enfermeras.get(at.get("enfermera_responsable"), "—")
+            ws.append([
+                at["fecha"], at["hora_llegada"], at.get("hora_salida") or "—",
+                est.get("nombre", "—"), est.get("curso", "—"), est.get("paralelo") or "—",
+                est.get("sexo", "—"),
+                at.get("saturacion"), at.get("temperatura"), at.get("frecuencia_cardiaca"),
+                at.get("diagnostico") or "—", at.get("recomendacion") or "—",
+                nombre_enfermera, at.get("origen_pc") or "—",
+            ])
+
+        anchos = [12, 12, 12, 22, 16, 12, 12, 14, 16, 18, 24, 30, 20, 10]
+        for i, ancho in enumerate(anchos, start=1):
+            ws.column_dimensions[get_column_letter(i)].width = ancho
+
+        ws.freeze_panes = "A2"  # deja fija la fila de encabezados al hacer scroll
+
+        nombre_sugerido = f"enfermeria_{obtener_origen_pc()}_{mes_iso}.xlsx"
+        ruta_destino = filedialog.asksaveasfilename(
+            title="Guardar Excel",
+            initialfile=nombre_sugerido,
+            defaultextension=".xlsx",
+            filetypes=[("Libro de Excel", "*.xlsx")]
+        )
+        if not ruta_destino:
+            return
+
+        try:
+            wb.save(ruta_destino)
+        except Exception as error:
+            messagebox.showerror("Error al exportar", f"No se pudo guardar el archivo:\n{error}")
+            return
+
+        messagebox.showinfo(
+            "Exportación exitosa",
+            f"Se exportaron {len(atenciones)} atención(es) a Excel.\n\nArchivo guardado en:\n{ruta_destino}"
+        )
     # ------------------------------------------------------------
     # Importación
     # ------------------------------------------------------------

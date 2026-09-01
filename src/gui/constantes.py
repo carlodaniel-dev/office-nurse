@@ -52,6 +52,7 @@ PARALELOS_EGB = ["A", "B", "C", "D"]
 # --------------------------------------------
 DIAGNOSTICOS = [
     "Acompañamiento",
+    "Docente",
     "Golpe",
     "Herida",
     "Vomito",

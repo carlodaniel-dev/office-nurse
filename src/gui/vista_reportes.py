@@ -23,7 +23,12 @@ from database.consultas import (
     contar_atenciones_por_especialidad_mes,
     contar_atenciones_por_mes_filtrado,
     contar_diagnosticos_por_mes_filtrado,
+    contar_atenciones_total_mes,
+    contar_atenciones_total_global,
+    promedio_atenciones_por_dia_global,
+    listar_estudiantes_frecuentes,
 )
+
 from gui.constantes import (
     CURSOS, PARALELOS, DIAGNOSTICOS,
     CURSOS_EGB, CURSOS_BACHILLERATO, PARALELOS_EGB, ESPECIALIDADES_BACHILLERATO, ESPECIALIDADES_ABREVIADAS,
@@ -94,39 +99,45 @@ class VistaReportes(ctk.CTkFrame):
         self.combo_mes.set(mes_actual)
         mes_iso = mapa_mes[mes_actual]
 
-        # --- Limpia gráficas anteriores ---
+                # --- Limpia gráficas anteriores ---
         for widget in self.frame_contenido.winfo_children():
             widget.destroy()
 
-        # --- 1. Sección filtrable por Curso + Paralelo (va primero) ---
-        self._crear_seccion_filtro_curso_paralelo(row=0)
+        # --- 0. Tarjetas de métricas (Total mes / Total global / Promedio diario) ---
+        self._crear_tarjetas_metricas(mes_iso, mes_actual, row=0)
 
-        # --- 2. Tendencia mensual (todas las atenciones, línea) ---
+        # --- 1. Estudiantes con visitas frecuentes (alerta) ---
+        self._crear_seccion_estudiantes_frecuentes(row=1)
+
+        # --- 2. Sección filtrable por Curso + Paralelo ---
+        self._crear_seccion_filtro_curso_paralelo(row=2)
+
+        # --- 3. Tendencia mensual (todas las atenciones, línea) ---
         datos_tendencia = contar_atenciones_por_mes()
         etiquetas_tendencia = [_nombre_mes(m) for m, _ in datos_tendencia]
         valores_tendencia = [total for _, total in datos_tendencia]
         self._crear_grafica_linea(
-            "Tendencia de Atenciones por Mes", etiquetas_tendencia, valores_tendencia,
-            row=1, columnspan=2
+            "Tendencia de atenciones por mes", etiquetas_tendencia, valores_tendencia,
+            row=3, columnspan=2
         )
 
-        # --- 3. Diagnósticos más frecuentes del mes seleccionado ---
+        # --- 4. Diagnósticos más frecuentes del mes seleccionado ---
         diagnosticos_predefinidos = [d for d in DIAGNOSTICOS if d != "Otros"]
         datos_diagnosticos = contar_diagnosticos_por_mes(mes_iso, diagnosticos_predefinidos)
         self._crear_grafica_barras(
-            f"Diagnósticos más Frecuentes — {mes_actual}",
+            f"Diagnósticos más frecuentes — {mes_actual}",
             [d for d, _ in datos_diagnosticos], [t for _, t in datos_diagnosticos],
-            row=2, column=0, columnspan=2, horizontal=True
+            row=4, column=0, columnspan=2, horizontal=True
         )
 
-        # --- 4. Atenciones por curso EGB y Bachillerato, lado a lado en la misma fila ---
+        # --- 5. Atenciones por curso EGB y Bachillerato, lado a lado ---
         datos_curso = dict(contar_atenciones_por_curso_mes(mes_iso))
 
         etiquetas_egb = CURSOS_EGB
         valores_egb = [datos_curso.get(c, 0) for c in CURSOS_EGB]
         self._crear_grafica_barras(
-            f"Atenciones EGB — {mes_actual}",
-            etiquetas_egb, valores_egb, row=3, column=0, columnspan=1, horizontal=False
+            f"Atenciones por curso (EGB) — {mes_actual}",
+            etiquetas_egb, valores_egb, row=5, column=0, columnspan=1, horizontal=False
         )
 
         datos_especialidad = {
@@ -143,8 +154,8 @@ class VistaReportes(ctk.CTkFrame):
                 valores_bach.append(datos_especialidad.get((curso, especialidad), 0))
 
         self._crear_grafica_barras(
-            f"Atenciones Bachillerato — {mes_actual}",
-            etiquetas_bach, valores_bach, row=3, column=1, columnspan=1, horizontal=False
+            f"Atenciones por curso (Bach.) — {mes_actual}",
+            etiquetas_bach, valores_bach, row=5, column=1, columnspan=1, horizontal=False
         )
         
     # ------------------------------------------------------------
@@ -247,6 +258,69 @@ class VistaReportes(ctk.CTkFrame):
                 row=0, column=1, horizontal=True, master=self.frame_graficas_filtro
             )
 
+    # ------------------------------------------------------------
+    # Tarjetas de métricas
+    # ------------------------------------------------------------
+    def _crear_tarjetas_metricas(self, mes_iso, mes_actual, row):
+        total_mes = contar_atenciones_total_mes(mes_iso)
+        total_global = contar_atenciones_total_global()
+        promedio_diario = promedio_atenciones_por_dia_global()
+
+        contenedor = ctk.CTkFrame(self.frame_contenido, fg_color="transparent")
+        contenedor.grid(row=row, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        contenedor.grid_columnconfigure((0, 1, 2), weight=1)
+
+        self._crear_tarjeta_metrica(contenedor, f"Atenciones — {mes_actual}", total_mes, 0)
+        self._crear_tarjeta_metrica(contenedor, "Atenciones — Total global", total_global, 1)
+        self._crear_tarjeta_metrica(contenedor, "Promedio diario (global)", promedio_diario, 2)
+
+    def _crear_tarjeta_metrica(self, master, etiqueta, valor, column):
+        tarjeta = ctk.CTkFrame(master)
+        tarjeta.grid(row=0, column=column, padx=5, sticky="ew")
+        ctk.CTkLabel(
+            tarjeta, text=etiqueta, font=estilos.fuente_pequena(), text_color=estilos.COLOR_TEXTO_GRIS
+        ).pack(pady=(15, 0))
+        ctk.CTkLabel(
+            tarjeta, text=str(valor), font=ctk.CTkFont(size=26, weight="bold"),
+            text_color=estilos.COLOR_AMARILLO
+        ).pack(pady=(0, 15))
+
+    # ------------------------------------------------------------
+    # Alerta: estudiantes con visitas frecuentes
+    # ------------------------------------------------------------
+    def _crear_seccion_estudiantes_frecuentes(self, row):
+        frecuentes = listar_estudiantes_frecuentes()
+        if not frecuentes:
+            return  # no se muestra la sección si no hay ningún caso, para no ocupar espacio innecesario
+
+        tarjeta = ctk.CTkFrame(self.frame_contenido)
+        tarjeta.grid(row=row, column=0, columnspan=2, sticky="ew", padx=5, pady=8)
+
+        ctk.CTkLabel(
+            tarjeta, text=f"⚠️ Estudiantes con visitas frecuentes ({len(frecuentes)})",
+            font=estilos.fuente_seccion_pequena(), text_color=estilos.COLOR_AMARILLO, anchor="w"
+        ).pack(fill="x", padx=15, pady=(15, 5))
+
+        ctk.CTkLabel(
+            tarjeta, text="3+ visitas esta semana, o 5+ este mes.",
+            text_color=estilos.COLOR_TEXTO_GRIS, anchor="w"
+        ).pack(fill="x", padx=15, pady=(0, 10))
+
+        for id_est, nombre, curso, paralelo, conteo_semana, conteo_mes in frecuentes:
+            fila = ctk.CTkFrame(tarjeta, fg_color="transparent")
+            fila.pack(fill="x", padx=15, pady=3)
+
+            paralelo_texto = f" {paralelo}" if paralelo and paralelo != "N/A" else ""
+            ctk.CTkLabel(
+                fila, text=f"{nombre} — {curso}{paralelo_texto}", anchor="w"
+            ).pack(side="left")
+
+            ctk.CTkLabel(
+                fila, text=f"{conteo_semana} esta semana · {conteo_mes} este mes",
+                text_color=estilos.COLOR_TEXTO_GRIS, anchor="e"
+            ).pack(side="right")
+
+        ctk.CTkFrame(tarjeta, fg_color="transparent", height=10).pack()  # espacio inferior
     # ------------------------------------------------------------
     # Helpers para crear gráficas embebidas con el estilo del sistema
     # ------------------------------------------------------------

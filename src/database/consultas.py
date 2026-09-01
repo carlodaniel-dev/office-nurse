@@ -570,7 +570,6 @@ def crear_usuario(nombre_completo, usuario, password_hash, rol="enfermera"):
     conexion.close()
     return id_usuario
 
-
 def obtener_usuario_por_usuario(usuario):
     """Devuelve (id, nombre_completo, usuario, password_hash, rol, activo) o None."""
     conexion = conectar()
@@ -580,5 +579,106 @@ def obtener_usuario_por_usuario(usuario):
         FROM usuarios WHERE usuario = ?
     """, (usuario,))
     resultado = cursor.fetchone()
+    conexion.close()
+    return resultado
+
+# ==========================================================
+# MÉTRICAS Y ALERTAS
+# ==========================================================
+
+def contar_atenciones_total_mes(mes):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT COUNT(*) FROM atenciones WHERE strftime('%Y-%m', fecha) = ?", (mes,))
+    total = cursor.fetchone()[0]
+    conexion.close()
+    return total
+
+
+def contar_atenciones_total_global():
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT COUNT(*) FROM atenciones")
+    total = cursor.fetchone()[0]
+    conexion.close()
+    return total
+
+
+def contar_estudiantes_distintos_mes(mes):
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT COUNT(DISTINCT estudiante_id) FROM atenciones WHERE strftime('%Y-%m', fecha) = ?", (mes,))
+    total = cursor.fetchone()[0]
+    conexion.close()
+    return total
+
+
+def promedio_atenciones_por_dia_global():
+    """Promedio de atenciones por día, considerando solo los días en que sí hubo al menos una."""
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("SELECT COUNT(*), COUNT(DISTINCT fecha) FROM atenciones")
+    total, dias = cursor.fetchone()
+    conexion.close()
+    if not dias:
+        return 0
+    return round(total / dias, 1)
+
+
+def listar_estudiantes_frecuentes():
+    """
+    Estudiantes con 3+ atenciones en la SEMANA actual o 5+ en el MES actual.
+    Se calcula sobre la fecha real de hoy (no depende de ningún filtro de la vista).
+    """
+    hoy = datetime.now()
+    semana_actual = hoy.strftime("%Y-%W")
+    mes_actual = hoy.strftime("%Y-%m")
+
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT e.id, e.nombre, e.curso, e.paralelo,
+               SUM(CASE WHEN strftime('%Y-%W', a.fecha) = ? THEN 1 ELSE 0 END) AS conteo_semana,
+               SUM(CASE WHEN strftime('%Y-%m', a.fecha) = ? THEN 1 ELSE 0 END) AS conteo_mes
+        FROM atenciones a
+        JOIN estudiantes e ON a.estudiante_id = e.id
+        GROUP BY e.id
+        HAVING conteo_semana >= 3 OR conteo_mes >= 5
+        ORDER BY conteo_mes DESC, conteo_semana DESC
+    """, (semana_actual, mes_actual))
+    resultados = cursor.fetchall()
+    conexion.close()
+    return resultados
+
+
+def obtener_frecuencia_estudiante(estudiante_id):
+    """Devuelve (conteo_semana_actual, conteo_mes_actual) para UN estudiante específico."""
+    hoy = datetime.now()
+    semana_actual = hoy.strftime("%Y-%W")
+    mes_actual = hoy.strftime("%Y-%m")
+
+    conexion = conectar()
+    cursor = conexion.cursor()
+    cursor.execute("""
+        SELECT
+            SUM(CASE WHEN strftime('%Y-%W', fecha) = ? THEN 1 ELSE 0 END),
+            SUM(CASE WHEN strftime('%Y-%m', fecha) = ? THEN 1 ELSE 0 END)
+        FROM atenciones WHERE estudiante_id = ?
+    """, (semana_actual, mes_actual, estudiante_id))
+    fila = cursor.fetchone()
+    conexion.close()
+    return (fila[0] or 0), (fila[1] or 0)
+
+
+def listar_usuarios_por_ids(ids_usuarios):
+    """Devuelve {id: nombre_completo} para un conjunto de ids de usuarios (usado al exportar a Excel)."""
+    ids_usuarios = [i for i in ids_usuarios if i]
+    if not ids_usuarios:
+        return {}
+    conexion = conectar()
+    cursor = conexion.cursor()
+    placeholders = ",".join("?" for _ in ids_usuarios)
+    cursor.execute(f"SELECT id, nombre_completo FROM usuarios WHERE id IN ({placeholders})", ids_usuarios)
+    resultado = dict(cursor.fetchall())
     conexion.close()
     return resultado
